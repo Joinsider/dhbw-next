@@ -14,8 +14,11 @@ sha256sums=('SKIP')
 build() {
     cd "${srcdir}/${pkgname}-${pkgver}"
     
+    # Set JAVA_HOME to use the correct JDK
+    export JAVA_HOME=/usr/lib/jvm/java-11-openjdk
+    
     # Build the desktop application
-    ./gradlew :composeApp:packageDistributionForCurrentOS -Pcompose.desktop.currentOs=linux-x64 --no-daemon
+    ./gradlew :composeApp:createDistributable --no-daemon
 }
 
 package() {
