@@ -1,0 +1,14 @@
+pkgbase = dhbw-next
+	pkgdesc = DHBW Horb Studenten App - A Kotlin Multiplatform application for DHBW students
+	pkgver = 1.0.4
+	pkgrel = 1
+	url = https://github.com/Joinsider/dhbw-next
+	arch = x86_64
+	license = custom
+	makedepends = jdk11-openjdk
+	makedepends = gradle
+	depends = java-runtime>=11
+	source = dhbw-next-1.0.4.tar.gz::https://github.com/Joinsider/dhbw-next/archive/refs/tags/v1.0.4.tar.gz
+	sha256sums = SKIP
+
+pkgname = dhbw-next
