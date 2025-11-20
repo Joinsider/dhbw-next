@@ -7,6 +7,7 @@ on:
       - completed
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,33 +17,55 @@ permissions:
 jobs:
   deploy-apt-repo:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
+      GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+      GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Get latest release
-        id: latest_release
-        uses: pozetroninc/github-action-get-latest-release@master
         with:
-          repository: ${{ github.repository }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          lfs: true
 
-      - name: Download AMD64 DEB from release
-        uses: dsaltares/fetch-gh-release-asset@master
-        with:
-          repo: ${{ github.repository }}
-          version: ${{ steps.latest_release.outputs.release }}
-          file: "*amd64.deb"
-          target: "downloads/"
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download AMD64 DEB from latest release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p downloads
+          
+          # Get the latest release (including drafts)
+          LATEST_RELEASE=$(gh api repos/${{ github.repository }}/releases | jq -r 'sort_by(.created_at) | reverse | .[0]')
+          RELEASE_TAG=$(echo "$LATEST_RELEASE" | jq -r '.tag_name')
+          
+          echo "Latest release tag: $RELEASE_TAG"
+          
+          # Find and download the amd64.deb asset
+          ASSET_URL=$(echo "$LATEST_RELEASE" | jq -r '.assets[] | select(.name | contains("amd64.deb")) | .url')
+          
+          if [ -z "$ASSET_URL" ]; then
+            echo "Error: No amd64.deb asset found in release $RELEASE_TAG"
+            exit 1
+          fi
+          
+          echo "Downloading asset from: $ASSET_URL"
+          
+          # Download the asset
+          curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+               -H "Accept: application/octet-stream" \
+               "$ASSET_URL" -o downloads/dhbw-next_amd64.deb
 
       - name: Setup APT repository structure
         run: |
           # Copy existing apt-repo directory if it exists
           if [ -d "apt-repo" ]; then
             cp -r apt-repo public/
+            # Remove any old .deb files from the copied directory (they might be LFS pointers)
+            find public/pool/main -name "*.deb" -type f -delete 2>/dev/null || true
+            # Remove old Packages files to ensure fresh generation
+            find public/dists -name "Packages" -type f -delete 2>/dev/null || true
+            find public/dists -name "Packages.gz" -type f -delete 2>/dev/null || true
           else
             mkdir -p public
           fi
@@ -65,7 +88,7 @@ jobs:
           
           # Generate Packages for amd64
           dpkg-scanpackages --arch amd64 pool/ > dists/stable/main/binary-amd64/Packages
-          gzip -9 -k dists/stable/main/binary-amd64/Packages
+          gzip -9 -k -f dists/stable/main/binary-amd64/Packages
 
       - name: Generate Release file
         run: |
@@ -86,28 +109,39 @@ jobs:
 
       - name: Import GPG key
         run: |
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" --import
 
       - name: Sign Release file
         run: |
           cd public/dists/stable
           
+          # Remove any existing signature files
+          rm -f Release.gpg InRelease
+          
           # Create Release.gpg
-          gpg --default-key ${{ secrets.GPG_KEY_ID }} \
+          echo "$GPG_PASSPHRASE" | gpg --default-key $GPG_KEY_ID \
+              --batch \
+              --yes \
+              --pinentry-mode loopback \
+              --passphrase-fd 0 \
               --armor \
               --detach-sign \
               --output Release.gpg \
               Release
           
           # Create InRelease
-          gpg --default-key ${{ secrets.GPG_KEY_ID }} \
+          echo "$GPG_PASSPHRASE" | gpg --default-key $GPG_KEY_ID \
+              --batch \
+              --yes \
+              --pinentry-mode loopback \
+              --passphrase-fd 0 \
               --clearsign \
               --output InRelease \
               Release
 
       - name: Export public GPG key
         run: |
-          gpg --armor --export ${{ secrets.GPG_KEY_ID }} > public/pubkey.gpg
+          gpg --armor --export $GPG_KEY_ID > public/pubkey.gpg
 
       - name: Create index.html
         run: |

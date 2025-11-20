@@ -47,7 +47,7 @@ kotlin {
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
-            implementation(compose.material3)
+            implementation(libs.compose.material3)
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
@@ -101,8 +101,8 @@ android {
         applicationId = "de.joinside.dhbw"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 11
-        versionName = "v1.0.8"
+        versionCode = 12
+        versionName = "v1.0.9"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -171,7 +171,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "dhbw-next"
-            packageVersion = "1.0.8"
+            packageVersion = "1.0.9"
             modules(
                 "java.base",
                 "java.datatransfer",
@@ -220,7 +220,7 @@ room {
 // Custom fat JAR task - simple and reliable
 val packageFatJar by tasks.registering(Jar::class) {
     archiveBaseName.set("dhbw-next")
-    archiveVersion.set("1.0.8")
+    archiveVersion.set("1.0.9")
     archiveClassifier.set("all")
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
