@@ -12,6 +12,18 @@ brew install dhbw-next --cask
 Afterwards you could just run the application however this results in multiple notifications by the macos keychain to enter your mac's password on each restart of the app. 
 To combat this run these commands in your terminal to generate a new self-signed certificate to sign the application locally. These two commands need to be run on every new install of my application until I get a apple developer account.
 
+### Sign application
+1. Download the script sign-dhbw-next.sh from the repo under documentation/macOS/sign-dhbw-next.sh
+2. Open the terminal on your mac
+3. Enter the following commands:
+```shell
+cd Downloads
+chmod +x sign-dhbw-next.sh
+./sign-dhbw-next.sh
+```
+4. Follow the instructions in the script to generate a new certificate or use an existing one.
+5. Open the app afterwards
+
 ## Opening the application for the first time
 Since this app is not signed with an Apple Developer certificate, 
 you'll need to allow it to run:
