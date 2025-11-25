@@ -20,6 +20,7 @@ import de.joinside.dhbw.data.storage.credentials.SecureStorageWrapper
 import de.joinside.dhbw.data.storage.database.createRoomDatabase
 import de.joinside.dhbw.data.storage.database.getDatabaseBuilder
 import de.joinside.dhbw.services.LectureService
+import de.joinside.dhbw.services.notifications.NotificationDispatcher
 import de.joinside.dhbw.ui.schedule.viewModels.TimetableViewModel
 import io.github.aakira.napier.Napier
 import io.ktor.client.HttpClient
@@ -48,6 +49,10 @@ class MainActivity : ComponentActivity() {
         // Test logging to verify Napier is working
         Napier.d("MainActivity onCreate() called", tag = "MainActivity")
         Napier.i("App is starting...", tag = "MainActivity")
+
+        // Initialize NotificationDispatcher with Android context
+        NotificationDispatcher.initialize(this)
+        Napier.d("NotificationDispatcher initialized", tag = "MainActivity")
 
         // Initialize services
         initializeServices()

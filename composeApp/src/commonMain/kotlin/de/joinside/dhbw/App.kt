@@ -21,6 +21,9 @@ import de.joinside.dhbw.data.storage.credentials.SecureStorageWrapper
 import de.joinside.dhbw.data.storage.database.AppDatabase
 import de.joinside.dhbw.data.storage.preferences.ThemeMode
 import de.joinside.dhbw.data.storage.preferences.ThemePreferences
+import de.joinside.dhbw.data.storage.preferences.NotificationPreferences
+import de.joinside.dhbw.data.storage.preferences.NotificationPreferencesInteractor
+import de.joinside.dhbw.services.notifications.NotificationDispatcher
 import de.joinside.dhbw.ui.pages.GradesPage
 import de.joinside.dhbw.ui.pages.SettingsPage
 import de.joinside.dhbw.ui.pages.Startpage
@@ -75,6 +78,17 @@ fun App(
     val themePreferences = remember { ThemePreferences(secureStorage) }
     var themeMode by remember { mutableStateOf(themePreferences.getThemeMode()) }
     var materialYouEnabled by remember { mutableStateOf(themePreferences.getMaterialYouEnabled()) }
+
+    // Initialize notification preferences
+    val notificationPreferences = remember { NotificationPreferences(secureStorageWrapper) }
+    val notificationPreferencesInteractor = remember { NotificationPreferencesInteractor(notificationPreferences) }
+
+    // Observe notification preferences
+    val notificationsEnabled by notificationPreferencesInteractor.notificationsEnabled.collectAsState()
+    val lectureAlertsEnabled by notificationPreferencesInteractor.lectureAlertsEnabled.collectAsState()
+
+    // Notification dispatcher (used later by schedulers/monitors)
+    val notificationDispatcher = remember { NotificationDispatcher() }
 
     // Create shared HttpClient for all Dualis services (IMPORTANT for cookie sharing!)
     val sharedHttpClient = remember {
@@ -222,6 +236,7 @@ fun App(
                 }
 
                 AppScreen.SETTINGS -> {
+                    val scope = rememberCoroutineScope()
                     SettingsPage(
                         onNavigateToTimetable = {
                             currentScreen = AppScreen.TIMETABLE
@@ -241,6 +256,14 @@ fun App(
                             materialYouEnabled = enabled
                             themePreferences.setMaterialYouEnabled(enabled)
                         },
+                        notificationsEnabled = notificationsEnabled,
+                        onNotificationsEnabledChange = { enabled ->
+                            scope.launch { notificationPreferencesInteractor.setNotificationsEnabled(enabled) }
+                        },
+                        lectureAlertsEnabled = lectureAlertsEnabled,
+                        onLectureAlertsEnabledChange = { enabled ->
+                            scope.launch { notificationPreferencesInteractor.setLectureAlertsEnabled(enabled) }
+                        },
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(top = 16.dp)
@@ -250,4 +273,3 @@ fun App(
         }
     }
 }
-
