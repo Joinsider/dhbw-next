@@ -9,6 +9,7 @@ package de.joinside.dhbw.ui.settings
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChangeCircle
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material3.*
@@ -20,7 +21,13 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import de.joinside.dhbw.resources.Res
+import de.joinside.dhbw.resources.allow_notifications
+import de.joinside.dhbw.resources.allow_notifications_description
+import de.joinside.dhbw.resources.lecture_change_notification
+import de.joinside.dhbw.resources.lecture_change_notification_description
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,16 +96,16 @@ fun NotificationSettingsCard(
                                 .padding(end = 8.dp)
                         )
                         Text(
-                            text = "Enable Notifications",
+                            text = stringResource(Res.string.allow_notifications),
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium
                         )
                     }
                     Text(
-                        text = "Allow the app to send notifications",
+                        text = stringResource(Res.string.allow_notifications_description),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 32.dp)
+                        modifier = Modifier.padding(start = 24.dp)
                     )
                 }
 
@@ -153,15 +160,25 @@ fun NotificationSettingsCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.ChangeCircle,
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .padding(end = 8.dp)
+                                )
+                                Text(
+                                    text = stringResource(Res.string.lecture_change_notification),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
                             Text(
-                                text = "Lecture Change Alerts",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = "Get notified about lecture time, location, and cancellation changes",
+                                text = stringResource(Res.string.lecture_change_notification_description),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(start = 24.dp)
                             )
                         }
 
