@@ -151,7 +151,7 @@ class NotificationManager(
      * Format a LocalDateTime to date string (dd.MM.yyyy).
      */
     private fun formatDate(dateTime: LocalDateTime): String {
-        return "${dateTime.dayOfMonth.toString().padStart(2, '0')}.${dateTime.monthNumber.toString().padStart(2, '0')}.${dateTime.year}"
+        return "${dateTime.day.toString().padStart(2, '0')}.${dateTime.month.toString().padStart(2, '0')}.${dateTime.year}"
     }
 }
 

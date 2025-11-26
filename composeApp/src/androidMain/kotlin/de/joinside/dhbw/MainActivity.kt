@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.lifecycleScope
 import de.joinside.dhbw.data.dualis.remote.DualisApiClient
 import de.joinside.dhbw.data.dualis.remote.parser.HtmlParser
 import de.joinside.dhbw.data.dualis.remote.parser.TimetableParser
@@ -25,6 +26,7 @@ import de.joinside.dhbw.ui.schedule.viewModels.TimetableViewModel
 import io.github.aakira.napier.Napier
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.cookies.HttpCookies
+import kotlinx.coroutines.cancel
 
 class MainActivity : ComponentActivity() {
 
@@ -159,6 +161,12 @@ class MainActivity : ComponentActivity() {
     override fun onPause() {
         super.onPause()
         Napier.d("MainActivity onPause() called", tag = "MainActivity")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        lifecycleScope.cancel()
+        Napier.d("MainActivity onDestroy() called, lifecycle scope cancelled", tag = "MainActivity")
     }
 }
 

@@ -37,9 +37,14 @@ class LectureMonitorScheduler(private val scope: CoroutineScope) {
 
             while (isActive) {
                 try {
-                    // TODO: Perform monitoring check
-                    // Will be connected when integrating with the app
-                    Napier.d("Lecture monitoring check placeholder - implementation pending", tag = TAG)
+                    // Check if NotificationManager is initialized
+                    if (NotificationServiceLocator.isInitialized()) {
+                        val notificationManager = NotificationServiceLocator.getNotificationManager()
+                        Napier.d("Performing periodic lecture change check", tag = TAG)
+                        notificationManager.checkAndNotify()
+                    } else {
+                        Napier.w("NotificationManager not initialized, skipping check", tag = TAG)
+                    }
 
                 } catch (e: CancellationException) {
                     throw e // Re-throw to stop the loop

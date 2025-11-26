@@ -216,9 +216,32 @@ class LectureChangeMonitor(
      * This is a helper to get current lecturer associations.
      */
     private suspend fun getLecturersForLecture(lectureId: Long): List<de.joinside.dhbw.data.storage.database.entities.timetable.LecturerEntity> {
-        // For now, return empty list as we need to fetch this from the current data
-        // In a real implementation, this would query the lecturers associated with the current fetch
-        return emptyList()
+        try {
+            // Get cross-references for this lecture
+            val crossRefs = lectureLecturerCrossRefDao.getByLectureId(lectureId)
+
+            if (crossRefs.isEmpty()) {
+                return emptyList()
+            }
+
+            // Fetch lecturer entities
+            val lecturers = mutableListOf<de.joinside.dhbw.data.storage.database.entities.timetable.LecturerEntity>()
+            for (crossRef in crossRefs) {
+                val lecturer = lectureEventDao.getAllWithLecturers()
+                    .firstOrNull { it.lecture.lectureId == lectureId }
+                    ?.lecturers
+                    ?.firstOrNull { it.lecturerId == crossRef.lecturerId }
+
+                if (lecturer != null) {
+                    lecturers.add(lecturer)
+                }
+            }
+
+            return lecturers
+        } catch (e: Exception) {
+            Napier.w("Error fetching lecturers for lecture $lectureId: ${e.message}", tag = TAG)
+            return emptyList()
+        }
     }
 }
 

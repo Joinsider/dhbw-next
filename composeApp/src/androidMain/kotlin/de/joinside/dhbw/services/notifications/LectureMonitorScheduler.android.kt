@@ -78,19 +78,36 @@ class LectureMonitorWorker(
     override suspend fun doWork(): Result {
         Napier.d("Starting lecture change monitoring work", tag = TAG)
 
-        try {
-            // TODO: Get dependencies from application context or DI
-            // For now, we'll need to initialize the required services here
-            // This will be connected in the next step when we integrate with the app
+        return try {
+            // Check if NotificationManager is initialized
+            if (!NotificationServiceLocator.isInitialized()) {
+                Napier.e("NotificationManager not initialized, cannot perform background check", tag = TAG)
+                return Result.failure()
+            }
 
-            Napier.d("Lecture change monitoring work placeholder - implementation pending", tag = TAG)
+            val notificationManager = NotificationServiceLocator.getNotificationManager()
 
-            // Return success for now
-            return Result.success()
+            // Perform the monitoring check
+            Napier.d("Performing background lecture change check", tag = TAG)
+            notificationManager.checkAndNotify()
+
+            Napier.d("Background lecture change check completed successfully", tag = TAG)
+            Result.success()
 
         } catch (e: Exception) {
             Napier.e("Error during lecture change monitoring: ${e.message}", e, tag = TAG)
-            return Result.retry()
+
+            // Retry on transient errors (network, auth)
+            if (e.message?.contains("network", ignoreCase = true) == true ||
+                e.message?.contains("auth", ignoreCase = true) == true ||
+                e.message?.contains("connection", ignoreCase = true) == true
+            ) {
+                Napier.d("Transient error detected, scheduling retry", tag = TAG)
+                Result.retry()
+            } else {
+                // Permanent failure
+                Result.failure()
+            }
         }
     }
 }
