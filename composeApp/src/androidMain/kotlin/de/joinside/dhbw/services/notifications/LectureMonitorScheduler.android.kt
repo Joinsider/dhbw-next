@@ -21,7 +21,7 @@ class LectureMonitorScheduler(private val context: Context) {
     companion object {
         private const val TAG = "LectureMonitorScheduler"
         private const val WORK_NAME = "lecture_change_monitor"
-        private const val REPEAT_INTERVAL_MINUTES = 5L // Changed to 5 minutes for testing
+        private const val REPEAT_INTERVAL_MINUTES = 15L // Changed to 5 minutes for testing
     }
 
     /**
@@ -30,20 +30,24 @@ class LectureMonitorScheduler(private val context: Context) {
     fun schedule() {
         Napier.d("📱 Android Scheduler: Scheduling WorkManager job...", tag = TAG)
 
+        // Use more permissive constraints that work even when device is locked
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
+            // Note: WorkManager enforces minimum 15 minutes for periodic work
+            // For testing, the 5-minute request will be clamped to 15 minutes
             .build()
-        Napier.d("   ✓ Constraints: Network required", tag = TAG)
+        Napier.d("   ✓ Constraints: Network required (works in Doze maintenance windows)", tag = TAG)
 
         val workRequest = PeriodicWorkRequestBuilder<LectureMonitorWorker>(
             REPEAT_INTERVAL_MINUTES,
             TimeUnit.MINUTES
         )
             .setConstraints(constraints)
-            .setInitialDelay(1, TimeUnit.MINUTES) // Wait 1 minute after app start (reduced for testing)
+            .setInitialDelay(1, TimeUnit.MINUTES) // Wait 1 minute after app start
             .build()
-        Napier.d("   ✓ Work request created: every $REPEAT_INTERVAL_MINUTES minutes", tag = TAG)
+        Napier.d("   ✓ Work request created: every $REPEAT_INTERVAL_MINUTES minutes (may be clamped to 15 min minimum)", tag = TAG)
         Napier.d("   ✓ Initial delay: 1 minute", tag = TAG)
+        Napier.d("   ℹ️  Note: Job will run during Doze maintenance windows even when device is locked", tag = TAG)
 
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             WORK_NAME,
@@ -51,7 +55,7 @@ class LectureMonitorScheduler(private val context: Context) {
             workRequest
         )
 
-        Napier.d("✅ Lecture monitoring scheduled successfully (every $REPEAT_INTERVAL_MINUTES minutes)", tag = TAG)
+        Napier.d("✅ Lecture monitoring scheduled successfully", tag = TAG)
     }
 
     /**

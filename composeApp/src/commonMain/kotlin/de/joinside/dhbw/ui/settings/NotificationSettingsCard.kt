@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChangeCircle
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,10 +38,13 @@ fun NotificationSettingsCard(
     onNotificationsEnabledChange: (Boolean) -> Unit = {},
     lectureAlertsEnabled: Boolean = false,
     onLectureAlertsEnabledChange: (Boolean) -> Unit = {},
+    onManualCheckRequested: (suspend () -> Unit)? = null,  // NEW: callback for manual check
     modifier: Modifier = Modifier
 ) {
     val hapticFeedback = LocalHapticFeedback.current
     val coroutineScope = rememberCoroutineScope()
+    var isCheckingChanges by remember { mutableStateOf(false) }
+    var checkResult by remember { mutableStateOf<String?>(null) }
 
     // Platform permission helpers
     val currentPermission = checkNotificationPermission()
@@ -195,6 +199,69 @@ fun NotificationSettingsCard(
                             },
                             modifier = Modifier.testTag("lectureAlertsEnabledSwitch")
                         )
+                    }
+
+                    // Manual Check Button (only if callback provided)
+                    if (onManualCheckRequested != null) {
+                        Button(
+                            onClick = {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                isCheckingChanges = true
+                                checkResult = null
+                                coroutineScope.launch {
+                                    try {
+                                        onManualCheckRequested()
+                                        checkResult = "✅ Check completed"
+                                    } catch (e: Exception) {
+                                        checkResult = "❌ Error: ${e.message?.take(50)}"
+                                    } finally {
+                                        isCheckingChanges = false
+                                    }
+                                }
+                            },
+                            enabled = !isCheckingChanges,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 12.dp)
+                                .testTag("checkNowButton"),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        ) {
+                            if (isCheckingChanges) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Sync,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
+                            Text(
+                                text = if (isCheckingChanges) "Checking..." else "Check for Lecture Changes Now",
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
+
+                        // Show check result
+                        checkResult?.let { result ->
+                            Text(
+                                text = result,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (result.startsWith("✅"))
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
                     }
 
                     // Test Notification Button

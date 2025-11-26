@@ -21,8 +21,6 @@ import android.graphics.Rect
 import android.graphics.Typeface
 import android.os.Build
 import androidx.annotation.RequiresPermission
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.School
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat

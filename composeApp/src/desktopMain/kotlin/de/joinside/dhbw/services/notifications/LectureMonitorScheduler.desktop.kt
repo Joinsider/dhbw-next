@@ -19,7 +19,7 @@ class LectureMonitorScheduler(private val scope: CoroutineScope) {
 
     companion object {
         private const val TAG = "LectureMonitorScheduler"
-        private val REPEAT_INTERVAL = 5.minutes // Changed to 5 minutes for testing
+        private val REPEAT_INTERVAL = 15.minutes // Changed to 5 minutes for testing
     }
 
     private var monitorJob: Job? = null

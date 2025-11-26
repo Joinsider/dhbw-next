@@ -39,9 +39,15 @@ class NotificationPreferencesInteractor(
      * Set the master notifications enabled preference and update flow
      */
     fun setNotificationsEnabled(enabled: Boolean) {
-        Napier.d("Preference change: setNotificationsEnabled -> $enabled")
+        val oldValue = _notificationsEnabled.value
+        Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = "NotificationPreferencesInteractor")
+        Napier.d("🔔 SETTING MASTER NOTIFICATIONS TOGGLE", tag = "NotificationPreferencesInteractor")
+        Napier.d("   Old value: $oldValue", tag = "NotificationPreferencesInteractor")
+        Napier.d("   New value: $enabled", tag = "NotificationPreferencesInteractor")
         preferences.setNotificationsEnabled(enabled)
         _notificationsEnabled.value = enabled
+        Napier.d("   ✅ StateFlow updated → will trigger collectors in MainActivity/main.kt", tag = "NotificationPreferencesInteractor")
+        Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = "NotificationPreferencesInteractor")
     }
 
     /**
@@ -55,15 +61,21 @@ class NotificationPreferencesInteractor(
      * Set the lecture alerts enabled preference and update flow
      */
     fun setLectureAlertsEnabled(enabled: Boolean) {
-        Napier.d("Preference change: setLectureAlertsEnabled -> $enabled")
+        val oldValue = _lectureAlertsEnabled.value
+        Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = "NotificationPreferencesInteractor")
+        Napier.d("📚 SETTING LECTURE ALERTS TOGGLE", tag = "NotificationPreferencesInteractor")
+        Napier.d("   Old value: $oldValue", tag = "NotificationPreferencesInteractor")
+        Napier.d("   New value: $enabled", tag = "NotificationPreferencesInteractor")
         preferences.setLectureAlertsEnabled(enabled)
         _lectureAlertsEnabled.value = enabled
+        Napier.d("   ✅ StateFlow updated → will trigger collectors in MainActivity/main.kt", tag = "NotificationPreferencesInteractor")
+        Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = "NotificationPreferencesInteractor")
     }
 
     /**
      * Check if lecture alerts should be processed (both master and lecture alerts enabled)
      */
-    suspend fun shouldProcessLectureAlerts(): Boolean {
+    fun shouldProcessLectureAlerts(): Boolean {
         val should = getNotificationsEnabled() && getLectureAlertsEnabled()
         Napier.d("shouldProcessLectureAlerts -> $should (notifications=${getNotificationsEnabled()}, lectureAlerts=${getLectureAlertsEnabled()})")
         return should

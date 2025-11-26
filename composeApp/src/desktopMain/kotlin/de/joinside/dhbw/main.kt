@@ -30,6 +30,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.combine
 
 fun main() {
     // Initialize Napier for JVM logging
@@ -127,14 +128,29 @@ fun main() {
     val lectureMonitorScheduler = LectureMonitorScheduler(appScope)
     Napier.d("LectureMonitorScheduler initialized", tag = "Main")
 
-    // Observe preferences to start/stop scheduler
+    // Observe BOTH preferences to start/stop scheduler
+    // Combine both flows so scheduler reacts to changes in either toggle
     appScope.launch {
-        notificationPreferencesInteractor.notificationsEnabled.collect { enabled ->
-            if (enabled && notificationPreferencesInteractor.getLectureAlertsEnabled()) {
-                Napier.d("Notifications enabled, starting scheduler", tag = "Main")
+        combine(
+            notificationPreferencesInteractor.notificationsEnabled,
+            notificationPreferencesInteractor.lectureAlertsEnabled
+        ) { notificationsEnabled, lectureAlertsEnabled ->
+            Pair(notificationsEnabled, lectureAlertsEnabled)
+        }.collect { (notificationsEnabled, lectureAlertsEnabled) ->
+            val shouldSchedule = notificationsEnabled && lectureAlertsEnabled
+
+            Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = "Main")
+            Napier.d("🖥️  PREFERENCE CHANGE DETECTED (Desktop)", tag = "Main")
+            Napier.d("   Master notifications toggle: $notificationsEnabled", tag = "Main")
+            Napier.d("   Lecture alerts toggle: $lectureAlertsEnabled", tag = "Main")
+            Napier.d("   → Should schedule: $shouldSchedule", tag = "Main")
+            Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = "Main")
+
+            if (shouldSchedule) {
+                Napier.d("✅ Both toggles enabled → Starting lecture monitoring scheduler...", tag = "Main")
                 lectureMonitorScheduler.schedule()
             } else {
-                Napier.d("Notifications disabled, stopping scheduler", tag = "Main")
+                Napier.d("🛑 One or both toggles disabled → Stopping lecture monitoring scheduler...", tag = "Main")
                 lectureMonitorScheduler.cancel()
             }
         }
@@ -156,7 +172,8 @@ fun main() {
             App(
                 testAuthenticationService = authenticationService,
                 timetableViewModel = timetableViewModel,
-                database = database
+                database = database,
+                notificationPreferencesInteractor = notificationPreferencesInteractor
             )
         }
     }
