@@ -8,7 +8,6 @@ package de.joinside.dhbw.services.notifications
 
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.*
-import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
 /**
@@ -49,8 +48,12 @@ class LectureMonitorScheduler(private val scope: CoroutineScope) {
                     if (NotificationServiceLocator.isInitialized()) {
                         val notificationManager = NotificationServiceLocator.getNotificationManager()
                         Napier.d("🚀 Calling notificationManager.checkAndNotify()...", tag = TAG)
-                        notificationManager.checkAndNotify()
-                        Napier.d("✅ Check completed, waiting $REPEAT_INTERVAL until next check", tag = TAG)
+                        val success = notificationManager.checkAndNotify()
+                        if (success) {
+                            Napier.d("✅ Check completed successfully, waiting $REPEAT_INTERVAL until next check", tag = TAG)
+                        } else {
+                            Napier.w("⚠️  Check failed, will retry on next interval", tag = TAG)
+                        }
                     } else {
                         Napier.w("⚠️  NotificationManager not initialized, skipping check", tag = TAG)
                     }

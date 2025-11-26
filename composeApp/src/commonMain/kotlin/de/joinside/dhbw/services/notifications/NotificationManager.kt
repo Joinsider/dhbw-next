@@ -26,8 +26,10 @@ class NotificationManager(
     /**
      * Check for lecture changes and send notifications if appropriate.
      * Only sends notifications if user has enabled them and granted permission.
+     *
+     * @return true if check completed successfully (with or without changes), false if error occurred
      */
-    suspend fun checkAndNotify() {
+    suspend fun checkAndNotify(): Boolean {
         Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = TAG)
         Napier.d("🔔 NotificationManager: Starting check and notify process", tag = TAG)
         Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = TAG)
@@ -42,7 +44,7 @@ class NotificationManager(
         if (!shouldProcess) {
             Napier.d("⏭️  Notifications or lecture alerts disabled, skipping check", tag = TAG)
             Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = TAG)
-            return
+            return true // Not an error, just disabled
         }
 
         // Check if we have permission
@@ -51,7 +53,7 @@ class NotificationManager(
         if (!hasPermission) {
             Napier.w("⚠️  No notification permission, skipping check", tag = TAG)
             Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = TAG)
-            return
+            return true // Not an error, just no permission
         }
 
         // Monitor for changes
@@ -88,18 +90,21 @@ class NotificationManager(
                     Napier.d("✅ Summary notification dispatched", tag = TAG)
                 }
                 Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = TAG)
+                return true
             }
 
             is MonitorResult.NoChanges -> {
                 Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = TAG)
                 Napier.d("✅ No lecture changes detected (${result.lecturesChecked} lectures checked)", tag = TAG)
                 Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = TAG)
+                return true
             }
 
             is MonitorResult.Error -> {
                 Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = TAG)
                 Napier.e("❌ ERROR checking for lecture changes: ${result.message}", tag = TAG)
                 Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = TAG)
+                return false
             }
         }
     }

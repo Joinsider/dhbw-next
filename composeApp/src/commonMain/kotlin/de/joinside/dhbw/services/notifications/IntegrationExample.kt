@@ -83,7 +83,10 @@ class MainActivity : ComponentActivity() {
         // Manual check on app startup (optional)
         lifecycleScope.launch {
             delay(5000) // Wait 5 seconds after startup
-            notificationManager.checkAndNotify()
+            val success = notificationManager.checkAndNotify()
+            if (!success) {
+                // Handle failure if needed
+            }
         }
     }
 }
@@ -187,9 +190,13 @@ class LectureMonitorWorker(
             val notificationManager = getNotificationManager(app)
 
             // Perform check
-            notificationManager.checkAndNotify()
+            val success = notificationManager.checkAndNotify()
 
-            Result.success()
+            if (success) {
+                Result.success()
+            } else {
+                Result.retry()
+            }
         } catch (e: Exception) {
             Napier.e("Worker failed: ${e.message}", e)
             Result.retry()

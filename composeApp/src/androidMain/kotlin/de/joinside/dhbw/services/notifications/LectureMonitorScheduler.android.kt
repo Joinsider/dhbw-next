@@ -103,7 +103,15 @@ class LectureMonitorWorker(
 
             // Perform the monitoring check
             Napier.d("🚀 Calling notificationManager.checkAndNotify()...", tag = TAG)
-            notificationManager.checkAndNotify()
+            val success = notificationManager.checkAndNotify()
+
+            if (!success) {
+                Napier.w("⚠️  Check failed, scheduling retry", tag = TAG)
+                Napier.d("╔════════════════════════════════════════════════════════════════════╗", tag = TAG)
+                Napier.d("║  ⏭️  Background Worker: Retrying due to error                      ║", tag = TAG)
+                Napier.d("╚════════════════════════════════════════════════════════════════════╝", tag = TAG)
+                return Result.retry()
+            }
 
             Napier.d("╔════════════════════════════════════════════════════════════════════╗", tag = TAG)
             Napier.d("║  ✅ Background Worker: Completed successfully                      ║", tag = TAG)
