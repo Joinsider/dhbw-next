@@ -71,8 +71,9 @@ class LectureChangeMonitor(
             val changes = mutableListOf<LectureChange>()
 
             // Create lookup maps for efficient comparison
-            val currentLectureMap = currentLectures.associateBy { it.lectureId }
-            val storedLectureMap = storedLectures.associateBy { it.lecture.lectureId }
+            val currentLectureMap = currentLectures.associateBy { it.toComparisonKey() }
+            val storedLectureMap = storedLectures.associateBy { it.lecture.toComparisonKey() }
+
 
             Napier.d("📊 Comparison maps created:", tag = TAG)
             Napier.d("   Current lectures: ${currentLectureMap.size} entries", tag = TAG)
@@ -81,7 +82,8 @@ class LectureChangeMonitor(
             // Check for modifications and deletions (cancellations)
             Napier.d("🔄 Checking for modifications and cancellations...", tag = TAG)
             for (stored in storedLectures) {
-                val current = currentLectureMap[stored.lecture.lectureId]
+                val comparisonKey = stored.lecture.toComparisonKey()
+                val current = currentLectureMap[comparisonKey]
 
                 if (current == null) {
                     // Potential cancellation - needs confirmation
@@ -119,7 +121,7 @@ class LectureChangeMonitor(
             // Check for new lectures
             Napier.d("➕ Checking for new lectures...", tag = TAG)
             for (current in currentLectures) {
-                if (!storedLectureMap.containsKey(current.lectureId)) {
+                if (!storedLectureMap.containsKey(current.toComparisonKey())) {
                     Napier.d("🆕 New lecture detected: ${current.lectureId} - ${current.shortSubjectName}", tag = TAG)
                     changes.add(
                         LectureChange.NewLecture(
@@ -250,6 +252,13 @@ class LectureChangeMonitor(
         }
 
         return stillMissing
+    }
+
+    /**
+     * Convert a lecture to a unique key for comparison.
+     */
+    private fun LectureEventEntity.toComparisonKey(): String {
+        return "${shortSubjectName}_${startTime}_${endTime}_${location}_${isTest}_${lectureId}"
     }
 
     /**
