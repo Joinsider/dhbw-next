@@ -6,6 +6,7 @@
 
 package de.joinside.dhbw.data.storage.preferences
 
+import io.github.aakira.napier.Napier
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,6 +24,10 @@ class NotificationPreferencesInteractor(
     private val _lectureAlertsEnabled = MutableStateFlow(preferences.getLectureAlertsEnabled())
     val lectureAlertsEnabled: StateFlow<Boolean> = _lectureAlertsEnabled.asStateFlow()
 
+    init {
+        Napier.d("NotificationPreferencesInteractor initialized: notifications=${_notificationsEnabled.value}, lectureAlerts=${_lectureAlertsEnabled.value}")
+    }
+
     /**
      * Get the master notifications enabled preference
      */
@@ -34,6 +39,7 @@ class NotificationPreferencesInteractor(
      * Set the master notifications enabled preference and update flow
      */
     fun setNotificationsEnabled(enabled: Boolean) {
+        Napier.d("Preference change: setNotificationsEnabled -> $enabled")
         preferences.setNotificationsEnabled(enabled)
         _notificationsEnabled.value = enabled
     }
@@ -49,6 +55,7 @@ class NotificationPreferencesInteractor(
      * Set the lecture alerts enabled preference and update flow
      */
     fun setLectureAlertsEnabled(enabled: Boolean) {
+        Napier.d("Preference change: setLectureAlertsEnabled -> $enabled")
         preferences.setLectureAlertsEnabled(enabled)
         _lectureAlertsEnabled.value = enabled
     }
@@ -57,7 +64,9 @@ class NotificationPreferencesInteractor(
      * Check if lecture alerts should be processed (both master and lecture alerts enabled)
      */
     suspend fun shouldProcessLectureAlerts(): Boolean {
-        return getNotificationsEnabled() && getLectureAlertsEnabled()
+        val should = getNotificationsEnabled() && getLectureAlertsEnabled()
+        Napier.d("shouldProcessLectureAlerts -> $should (notifications=${getNotificationsEnabled()}, lectureAlerts=${getLectureAlertsEnabled()})")
+        return should
     }
 
     /**
@@ -65,8 +74,12 @@ class NotificationPreferencesInteractor(
      * Useful after app restart or external preference changes
      */
     fun refresh() {
+        val oldNotifications = _notificationsEnabled.value
+        val oldLectureAlerts = _lectureAlertsEnabled.value
+
         _notificationsEnabled.value = preferences.getNotificationsEnabled()
         _lectureAlertsEnabled.value = preferences.getLectureAlertsEnabled()
+
+        Napier.d("Preferences refreshed: notifications ${oldNotifications} -> ${_notificationsEnabled.value}, lectureAlerts ${oldLectureAlerts} -> ${_lectureAlertsEnabled.value}")
     }
 }
-

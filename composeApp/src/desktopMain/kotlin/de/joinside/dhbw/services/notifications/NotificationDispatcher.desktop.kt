@@ -23,6 +23,7 @@ actual class NotificationDispatcher {
     private var trayIcon: TrayIcon? = null
 
     init {
+        Napier.d("NotificationDispatcher (desktop) instance created", tag = TAG)
         setupSystemTray()
     }
 
@@ -30,6 +31,7 @@ actual class NotificationDispatcher {
      * Setup system tray icon for notifications.
      */
     private fun setupSystemTray() {
+        Napier.d("Setting up system tray (desktop)", tag = TAG)
         if (!SystemTray.isSupported()) {
             Napier.w("System tray not supported on this platform", tag = TAG)
             return
@@ -49,7 +51,7 @@ actual class NotificationDispatcher {
                 tray.add(trayIcon)
             }
 
-            Napier.d("System tray initialized", tag = TAG)
+            Napier.d("System tray initialized (desktop)", tag = TAG)
         } catch (e: Exception) {
             Napier.e("Failed to setup system tray: ${e.message}", tag = TAG)
         }
@@ -59,20 +61,25 @@ actual class NotificationDispatcher {
      * Request notification permission (always granted on desktop).
      */
     actual suspend fun requestPermission(): Boolean {
-        return SystemTray.isSupported()
+        val supported = SystemTray.isSupported()
+        Napier.d("requestPermission (desktop) -> $supported", tag = TAG)
+        return supported
     }
 
     /**
      * Check if notification permission is granted (always true if system tray supported).
      */
     actual suspend fun hasPermission(): Boolean {
-        return SystemTray.isSupported()
+        val supported = SystemTray.isSupported()
+        Napier.d("hasPermission (desktop) -> $supported", tag = TAG)
+        return supported
     }
 
     /**
      * Show a notification using system tray.
      */
     actual suspend fun showNotification(title: String, message: String, lectureId: Long) {
+        Napier.d("showNotification (desktop) requested: lectureId=$lectureId, title='$title', message='$message'", tag = TAG)
         val icon = trayIcon
         if (icon == null) {
             Napier.w("Cannot show notification: system tray not available", tag = TAG)
@@ -81,7 +88,7 @@ actual class NotificationDispatcher {
 
         try {
             icon.displayMessage(title, message, TrayIcon.MessageType.INFO)
-            Napier.d("Notification shown for lecture $lectureId", tag = TAG)
+            Napier.d("Notification shown for lecture $lectureId (desktop)", tag = TAG)
         } catch (e: Exception) {
             Napier.e("Failed to show notification: ${e.message}", tag = TAG)
         }
@@ -91,6 +98,7 @@ actual class NotificationDispatcher {
      * Show a summary notification for multiple lecture changes.
      */
     actual suspend fun showSummaryNotification(title: String, message: String, changeCount: Int) {
+        Napier.d("showSummaryNotification (desktop) requested: count=$changeCount, title='$title', message='$message'", tag = TAG)
         val icon = trayIcon
         if (icon == null) {
             Napier.w("Cannot show notification: system tray not available", tag = TAG)
@@ -99,10 +107,9 @@ actual class NotificationDispatcher {
 
         try {
             icon.displayMessage(title, "$message ($changeCount changes)", TrayIcon.MessageType.INFO)
-            Napier.d("Summary notification shown for $changeCount changes", tag = TAG)
+            Napier.d("Summary notification shown for $changeCount changes (desktop)", tag = TAG)
         } catch (e: Exception) {
             Napier.e("Failed to show summary notification: ${e.message}", tag = TAG)
         }
     }
 }
-

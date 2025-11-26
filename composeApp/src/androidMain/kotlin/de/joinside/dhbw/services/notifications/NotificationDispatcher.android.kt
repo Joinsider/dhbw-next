@@ -13,12 +13,22 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Rect
+import android.graphics.Typeface
 import android.os.Build
 import androidx.annotation.RequiresPermission
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.School
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import de.joinside.dhbw.R
 import io.github.aakira.napier.Napier
+import androidx.core.graphics.createBitmap
 
 /**
  * Android implementation of NotificationDispatcher using NotificationCompat.
@@ -41,6 +51,7 @@ actual class NotificationDispatcher {
          */
         fun initialize(context: Context) {
             applicationContext = context.applicationContext
+            Napier.d("NotificationDispatcher.initialize called", tag = TAG)
         }
 
         private fun getContext(): Context {
@@ -55,6 +66,7 @@ actual class NotificationDispatcher {
         get() = getContext()
 
     init {
+        Napier.d("NotificationDispatcher instance created", tag = TAG)
         createNotificationChannel()
     }
 
@@ -78,17 +90,20 @@ actual class NotificationDispatcher {
      * Request notification permission from the user (Android 13+).
      */
     actual suspend fun requestPermission(): Boolean {
+        Napier.d("requestPermission called (returns current permission state)", tag = TAG)
         // Permission request must be initiated from an Activity
         // This method returns current permission state
         // The actual permission request should be done in the UI layer
-        return hasPermission()
+        val cur = hasPermission()
+        Napier.d("requestPermission -> current=${cur}", tag = TAG)
+        return cur
     }
 
     /**
      * Check if notification permission is currently granted.
      */
     actual suspend fun hasPermission(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        val granted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ActivityCompat.checkSelfPermission(
                 context,
                 Manifest.permission.POST_NOTIFICATIONS
@@ -97,6 +112,8 @@ actual class NotificationDispatcher {
             // Before Android 13, notifications don't require runtime permission
             true
         }
+        Napier.d("hasPermission -> $granted", tag = TAG)
+        return granted
     }
 
     /**
@@ -110,19 +127,29 @@ actual class NotificationDispatcher {
         }
 
         try {
-            val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_dialog_info) // TODO: Use app icon
+            val notificationBuilder = NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_school) // small icon required
                 .setContentTitle(title)
                 .setContentText(message)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(message))
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setAutoCancel(true)
-                .build()
+
+            // Create a large icon bitmap with school emoji to resemble Icons.Default.School
+            try {
+                val largeIcon = createSchoolEmojiBitmap(96)
+                notificationBuilder.setLargeIcon(largeIcon)
+                Napier.d("Set large icon (school emoji) for notification", tag = TAG)
+            } catch (e: Exception) {
+                Napier.w("Failed to create large icon bitmap: ${e.message}", tag = TAG)
+            }
+
+            val notification = notificationBuilder.build()
 
             val notificationId = (NOTIFICATION_ID_BASE + lectureId % 1000).toInt()
             NotificationManagerCompat.from(context).notify(notificationId, notification)
 
-            Napier.d("Notification shown for lecture $lectureId", tag = TAG)
+            Napier.d("Notification shown for lecture $lectureId (id=$notificationId)", tag = TAG)
         } catch (e: SecurityException) {
             Napier.e("SecurityException showing notification: ${e.message}", tag = TAG)
         }
@@ -140,7 +167,7 @@ actual class NotificationDispatcher {
 
         try {
             val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_dialog_info) // TODO: Use app icon
+                .setSmallIcon(R.drawable.ic_school)
                 .setContentTitle(title)
                 .setContentText(message)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(message))
@@ -151,10 +178,37 @@ actual class NotificationDispatcher {
 
             NotificationManagerCompat.from(context).notify(NOTIFICATION_ID_BASE, notification)
 
-            Napier.d("Summary notification shown for $changeCount changes", tag = TAG)
+            Napier.d("Summary notification shown for $changeCount changes (id=$NOTIFICATION_ID_BASE)", tag = TAG)
         } catch (e: SecurityException) {
             Napier.e("SecurityException showing notification: ${e.message}", tag = TAG)
         }
     }
-}
 
+    /**
+     * Create a bitmap with a school emoji to use as large icon.
+     * Size is in pixels. Uses Paint drawing with emoji character.
+     */
+    private fun createSchoolEmojiBitmap(sizePx: Int): Bitmap {
+        val bitmap = createBitmap(sizePx, sizePx)
+        val canvas = Canvas(bitmap)
+        canvas.drawColor(Color.TRANSPARENT)
+
+        val paint = Paint().apply {
+            isAntiAlias = true
+            color = Color.BLACK
+            textAlign = Paint.Align.CENTER
+            textSize = sizePx * 0.7f
+            // Use default typeface which usually supports emoji on Android
+            typeface = Typeface.DEFAULT
+        }
+
+        val emoji = "\uD83C\uDFEB" // school emoji 🏫
+        val bounds = Rect()
+        paint.getTextBounds(emoji, 0, emoji.length, bounds)
+        val x = sizePx / 2f
+        val y = sizePx / 2f - bounds.exactCenterY()
+        canvas.drawText(emoji, x, y, paint)
+
+        return bitmap
+    }
+}

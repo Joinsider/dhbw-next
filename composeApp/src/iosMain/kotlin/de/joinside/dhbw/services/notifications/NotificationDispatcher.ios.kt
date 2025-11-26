@@ -25,10 +25,15 @@ actual class NotificationDispatcher {
 
     private val notificationCenter = UNUserNotificationCenter.currentNotificationCenter()
 
+    init {
+        Napier.d("NotificationDispatcher (iOS) instance created", tag = TAG)
+    }
+
     /**
      * Request notification permission from the user.
      */
     actual suspend fun requestPermission(): Boolean = suspendCoroutine { continuation ->
+        Napier.d("requestPermission (iOS) called", tag = TAG)
         notificationCenter.requestAuthorizationWithOptions(
             UNAuthorizationOptionAlert or UNAuthorizationOptionSound or UNAuthorizationOptionBadge
         ) { granted, error ->
@@ -46,8 +51,10 @@ actual class NotificationDispatcher {
      * Check if notification permission is currently granted.
      */
     actual suspend fun hasPermission(): Boolean = suspendCoroutine { continuation ->
+        Napier.d("hasPermission (iOS) checking current authorization status", tag = TAG)
         notificationCenter.getNotificationSettingsWithCompletionHandler { settings ->
             val granted = settings?.authorizationStatus == UNAuthorizationStatusAuthorized
+            Napier.d("hasPermission (iOS) -> $granted", tag = TAG)
             continuation.resume(granted)
         }
     }
@@ -75,6 +82,7 @@ actual class NotificationDispatcher {
             trigger = null // Show immediately
         )
 
+        Napier.d("showNotification (iOS) -> adding request id=$identifier title='$title' message='$message'", tag = TAG)
         notificationCenter.addNotificationRequest(request) { error ->
             if (error != null) {
                 Napier.e("Error showing notification: $error", tag = TAG)
@@ -107,6 +115,7 @@ actual class NotificationDispatcher {
             trigger = null // Show immediately
         )
 
+        Napier.d("showSummaryNotification (iOS) -> adding summary request, count=$changeCount", tag = TAG)
         notificationCenter.addNotificationRequest(request) { error ->
             if (error != null) {
                 Napier.e("Error showing summary notification: $error", tag = TAG)
@@ -116,4 +125,3 @@ actual class NotificationDispatcher {
         }
     }
 }
-
