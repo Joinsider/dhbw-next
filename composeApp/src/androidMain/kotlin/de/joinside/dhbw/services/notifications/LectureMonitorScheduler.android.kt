@@ -21,24 +21,29 @@ class LectureMonitorScheduler(private val context: Context) {
     companion object {
         private const val TAG = "LectureMonitorScheduler"
         private const val WORK_NAME = "lecture_change_monitor"
-        private const val REPEAT_INTERVAL_HOURS = 2L
+        private const val REPEAT_INTERVAL_MINUTES = 5L // Changed to 5 minutes for testing
     }
 
     /**
      * Schedule periodic lecture monitoring work.
      */
     fun schedule() {
+        Napier.d("📱 Android Scheduler: Scheduling WorkManager job...", tag = TAG)
+
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
+        Napier.d("   ✓ Constraints: Network required", tag = TAG)
 
         val workRequest = PeriodicWorkRequestBuilder<LectureMonitorWorker>(
-            REPEAT_INTERVAL_HOURS,
-            TimeUnit.HOURS
+            REPEAT_INTERVAL_MINUTES,
+            TimeUnit.MINUTES
         )
             .setConstraints(constraints)
-            .setInitialDelay(15, TimeUnit.MINUTES) // Wait 15 minutes after app start
+            .setInitialDelay(1, TimeUnit.MINUTES) // Wait 1 minute after app start (reduced for testing)
             .build()
+        Napier.d("   ✓ Work request created: every $REPEAT_INTERVAL_MINUTES minutes", tag = TAG)
+        Napier.d("   ✓ Initial delay: 1 minute", tag = TAG)
 
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             WORK_NAME,
@@ -46,15 +51,16 @@ class LectureMonitorScheduler(private val context: Context) {
             workRequest
         )
 
-        Napier.d("Lecture monitoring scheduled (every $REPEAT_INTERVAL_HOURS hours)", tag = TAG)
+        Napier.d("✅ Lecture monitoring scheduled successfully (every $REPEAT_INTERVAL_MINUTES minutes)", tag = TAG)
     }
 
     /**
      * Cancel scheduled lecture monitoring work.
      */
     fun cancel() {
+        Napier.d("🛑 Android Scheduler: Cancelling WorkManager job...", tag = TAG)
         WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
-        Napier.d("Lecture monitoring cancelled", tag = TAG)
+        Napier.d("✅ Lecture monitoring cancelled", tag = TAG)
     }
 
     /**
@@ -76,36 +82,47 @@ class LectureMonitorWorker(
     }
 
     override suspend fun doWork(): Result {
-        Napier.d("Starting lecture change monitoring work", tag = TAG)
+        Napier.d("╔════════════════════════════════════════════════════════════════════╗", tag = TAG)
+        Napier.d("║  🔔 Background Worker: Starting lecture change monitoring work    ║", tag = TAG)
+        Napier.d("╚════════════════════════════════════════════════════════════════════╝", tag = TAG)
 
         return try {
             // Check if NotificationManager is initialized
             if (!NotificationServiceLocator.isInitialized()) {
-                Napier.e("NotificationManager not initialized, cannot perform background check", tag = TAG)
+                Napier.e("❌ NotificationManager not initialized, cannot perform background check", tag = TAG)
+                Napier.d("╚════════════════════════════════════════════════════════════════════╝", tag = TAG)
                 return Result.failure()
             }
 
             val notificationManager = NotificationServiceLocator.getNotificationManager()
+            Napier.d("✅ NotificationManager retrieved successfully", tag = TAG)
 
             // Perform the monitoring check
-            Napier.d("Performing background lecture change check", tag = TAG)
+            Napier.d("🚀 Calling notificationManager.checkAndNotify()...", tag = TAG)
             notificationManager.checkAndNotify()
 
-            Napier.d("Background lecture change check completed successfully", tag = TAG)
+            Napier.d("╔════════════════════════════════════════════════════════════════════╗", tag = TAG)
+            Napier.d("║  ✅ Background Worker: Completed successfully                      ║", tag = TAG)
+            Napier.d("╚════════════════════════════════════════════════════════════════════╝", tag = TAG)
             Result.success()
 
         } catch (e: Exception) {
+            Napier.e("╔════════════════════════════════════════════════════════════════════╗", tag = TAG)
+            Napier.e("║  ❌ Background Worker: ERROR                                       ║", tag = TAG)
+            Napier.e("╚════════════════════════════════════════════════════════════════════╝", tag = TAG)
             Napier.e("Error during lecture change monitoring: ${e.message}", e, tag = TAG)
+            Napier.e("Stack trace: ${e.stackTraceToString()}", tag = TAG)
 
             // Retry on transient errors (network, auth)
-            if (e.message?.contains("network", ignoreCase = true) == true ||
+            val shouldRetry = e.message?.contains("network", ignoreCase = true) == true ||
                 e.message?.contains("auth", ignoreCase = true) == true ||
                 e.message?.contains("connection", ignoreCase = true) == true
-            ) {
-                Napier.d("Transient error detected, scheduling retry", tag = TAG)
+
+            if (shouldRetry) {
+                Napier.d("⏭️  Transient error detected, scheduling retry", tag = TAG)
                 Result.retry()
             } else {
-                // Permanent failure
+                Napier.e("❌ Permanent failure, not retrying", tag = TAG)
                 Result.failure()
             }
         }

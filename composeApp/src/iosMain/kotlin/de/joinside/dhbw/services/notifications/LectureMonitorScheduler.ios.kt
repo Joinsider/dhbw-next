@@ -44,7 +44,7 @@ class LectureMonitorScheduler {
      * }
      *
      * let request = BGAppRefreshTaskRequest(identifier: "de.joinside.dhbw.lecture-monitor")
-     * request.earliestBeginDate = Date(timeIntervalSinceNow: 2 * 60 * 60) // 2 hours
+     * request.earliestBeginDate = Date(timeIntervalSinceNow: 5 * 60) // 5 minutes (for testing)
      * try? BGTaskScheduler.shared.submit(request)
      * ```
      */

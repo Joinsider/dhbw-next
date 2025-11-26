@@ -28,44 +28,78 @@ class NotificationManager(
      * Only sends notifications if user has enabled them and granted permission.
      */
     suspend fun checkAndNotify() {
+        Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = TAG)
+        Napier.d("🔔 NotificationManager: Starting check and notify process", tag = TAG)
+        Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = TAG)
+
         // Check if notifications should be processed
-        if (!preferences.shouldProcessLectureAlerts()) {
-            Napier.d("Notifications or lecture alerts disabled, skipping check", tag = TAG)
+        val shouldProcess = preferences.shouldProcessLectureAlerts()
+        Napier.d("📋 Preference check:", tag = TAG)
+        Napier.d("   - Notifications enabled: ${preferences.getNotificationsEnabled()}", tag = TAG)
+        Napier.d("   - Lecture alerts enabled: ${preferences.getLectureAlertsEnabled()}", tag = TAG)
+        Napier.d("   - Should process: $shouldProcess", tag = TAG)
+
+        if (!shouldProcess) {
+            Napier.d("⏭️  Notifications or lecture alerts disabled, skipping check", tag = TAG)
+            Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = TAG)
             return
         }
 
         // Check if we have permission
-        if (!dispatcher.hasPermission()) {
-            Napier.w("No notification permission, skipping check", tag = TAG)
+        val hasPermission = dispatcher.hasPermission()
+        Napier.d("🔐 Permission check: ${if (hasPermission) "✅ Granted" else "❌ Denied"}", tag = TAG)
+        if (!hasPermission) {
+            Napier.w("⚠️  No notification permission, skipping check", tag = TAG)
+            Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = TAG)
             return
         }
 
         // Monitor for changes
-        Napier.d("Checking for lecture changes...", tag = TAG)
+        Napier.d("🔍 Starting lecture change monitoring...", tag = TAG)
         when (val result = monitor.checkForChanges()) {
             is MonitorResult.Changes -> {
                 val changes = result.changes
-                Napier.d("Found ${changes.size} lecture changes", tag = TAG)
+                Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = TAG)
+                Napier.d("📬 CHANGES DETECTED - Found ${changes.size} lecture change(s)", tag = TAG)
+                Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = TAG)
+
+                changes.forEach { change ->
+                    Napier.d("   📝 ${change::class.simpleName}: ${change.courseName}", tag = TAG)
+                }
 
                 if (changes.size == 1) {
                     // Single change - show detailed notification
                     val change = changes.first()
                     val (title, message) = formatSingleChange(change)
+                    Napier.d("📤 Sending single notification:", tag = TAG)
+                    Napier.d("   Title: $title", tag = TAG)
+                    Napier.d("   Message: $message", tag = TAG)
                     dispatcher.showNotification(title, message, change.lectureId)
+                    Napier.d("✅ Single notification dispatched", tag = TAG)
                 } else {
                     // Multiple changes - show summary
                     val title = "Lecture Changes"
                     val message = formatMultipleChanges(changes)
+                    Napier.d("📤 Sending summary notification:", tag = TAG)
+                    Napier.d("   Title: $title", tag = TAG)
+                    Napier.d("   Message: $message", tag = TAG)
+                    Napier.d("   Change count: ${changes.size}", tag = TAG)
                     dispatcher.showSummaryNotification(title, message, changes.size)
+                    Napier.d("✅ Summary notification dispatched", tag = TAG)
                 }
+                Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = TAG)
             }
 
             is MonitorResult.NoChanges -> {
-                Napier.d("No lecture changes detected (${result.lecturesChecked} lectures checked)", tag = TAG)
+                Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = TAG)
+                Napier.d("✅ No lecture changes detected (${result.lecturesChecked} lectures checked)", tag = TAG)
+                Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = TAG)
             }
 
             is MonitorResult.Error -> {
-                Napier.e("Error checking for lecture changes: ${result.message}", tag = TAG)
+                Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = TAG)
+                Napier.e("❌ ERROR checking for lecture changes: ${result.message}", tag = TAG)
+                Napier.d("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", tag = TAG)
             }
         }
     }

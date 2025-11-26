@@ -9,6 +9,7 @@ package de.joinside.dhbw.services.notifications
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.*
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 /**
  * Desktop coroutine-based periodic scheduler for lecture change monitoring.
@@ -18,7 +19,7 @@ class LectureMonitorScheduler(private val scope: CoroutineScope) {
 
     companion object {
         private const val TAG = "LectureMonitorScheduler"
-        private val REPEAT_INTERVAL = 2.hours
+        private val REPEAT_INTERVAL = 5.minutes // Changed to 5 minutes for testing
     }
 
     private var monitorJob: Job? = null
@@ -28,44 +29,55 @@ class LectureMonitorScheduler(private val scope: CoroutineScope) {
      */
     fun schedule() {
         if (monitorJob?.isActive == true) {
-            Napier.d("Lecture monitoring already running", tag = TAG)
+            Napier.d("⚠️  Lecture monitoring already running, not starting again", tag = TAG)
             return
         }
 
+        Napier.d("🖥️  Desktop Scheduler: Starting coroutine-based monitoring...", tag = TAG)
+        Napier.d("   ✓ Interval: $REPEAT_INTERVAL", tag = TAG)
+
         monitorJob = scope.launch {
-            Napier.d("Starting lecture monitoring (every $REPEAT_INTERVAL)", tag = TAG)
+            Napier.d("╔════════════════════════════════════════════════════════════════════╗", tag = TAG)
+            Napier.d("║  🖥️  Desktop Scheduler: Starting (every $REPEAT_INTERVAL)         ║", tag = TAG)
+            Napier.d("╚════════════════════════════════════════════════════════════════════╝", tag = TAG)
 
             while (isActive) {
                 try {
+                    Napier.d("⏰ Scheduler tick - checking for changes...", tag = TAG)
+
                     // Check if NotificationManager is initialized
                     if (NotificationServiceLocator.isInitialized()) {
                         val notificationManager = NotificationServiceLocator.getNotificationManager()
-                        Napier.d("Performing periodic lecture change check", tag = TAG)
+                        Napier.d("🚀 Calling notificationManager.checkAndNotify()...", tag = TAG)
                         notificationManager.checkAndNotify()
+                        Napier.d("✅ Check completed, waiting $REPEAT_INTERVAL until next check", tag = TAG)
                     } else {
-                        Napier.w("NotificationManager not initialized, skipping check", tag = TAG)
+                        Napier.w("⚠️  NotificationManager not initialized, skipping check", tag = TAG)
                     }
 
                 } catch (e: CancellationException) {
+                    Napier.d("🛑 Scheduler cancelled", tag = TAG)
                     throw e // Re-throw to stop the loop
                 } catch (e: Exception) {
-                    Napier.e("Error during lecture monitoring: ${e.message}", e, tag = TAG)
+                    Napier.e("❌ Error during lecture monitoring: ${e.message}", e, tag = TAG)
                 }
 
+                Napier.d("💤 Sleeping for $REPEAT_INTERVAL...", tag = TAG)
                 delay(REPEAT_INTERVAL)
             }
         }
 
-        Napier.d("Lecture monitoring scheduled", tag = TAG)
+        Napier.d("✅ Lecture monitoring coroutine started", tag = TAG)
     }
 
     /**
      * Cancel scheduled lecture monitoring.
      */
     fun cancel() {
+        Napier.d("🛑 Desktop Scheduler: Cancelling monitoring coroutine...", tag = TAG)
         monitorJob?.cancel()
         monitorJob = null
-        Napier.d("Lecture monitoring cancelled", tag = TAG)
+        Napier.d("✅ Lecture monitoring cancelled", tag = TAG)
     }
 
     /**

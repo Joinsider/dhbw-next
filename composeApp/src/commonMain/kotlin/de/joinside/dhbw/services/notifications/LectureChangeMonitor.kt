@@ -38,13 +38,14 @@ class LectureChangeMonitor(
      */
     suspend fun checkForChanges(): MonitorResult {
         try {
-            Napier.d("Starting lecture change check", tag = TAG)
+            Napier.d("🔍 Starting lecture change check", tag = TAG)
 
             // Step 1: Fetch current lectures from Dualis
+            Napier.d("📥 Step 1: Fetching current lectures from Dualis...", tag = TAG)
             val fetchResult = dualisLectureService.getWeeklyLecturesForCurrentWeek()
             if (fetchResult.isFailure) {
                 val error = fetchResult.exceptionOrNull()
-                Napier.e("Failed to fetch current lectures: ${error?.message}", tag = TAG)
+                Napier.e("❌ Failed to fetch current lectures: ${error?.message}", tag = TAG)
                 return MonitorResult.Error(
                     "Failed to fetch lectures: ${error?.message}",
                     error
@@ -52,28 +53,42 @@ class LectureChangeMonitor(
             }
 
             val currentLectures = fetchResult.getOrNull() ?: emptyList()
-            Napier.d("Fetched ${currentLectures.size} current lectures", tag = TAG)
+            Napier.d("✅ Fetched ${currentLectures.size} current lectures from Dualis", tag = TAG)
+            currentLectures.forEachIndexed { index, lecture ->
+                Napier.d("   ${index + 1}. ${lecture.shortSubjectName} at ${lecture.startTime}", tag = TAG)
+            }
 
             // Step 2: Get stored lectures from database
+            Napier.d("💾 Step 2: Retrieving stored lectures from database...", tag = TAG)
             val storedLectures = lectureEventDao.getAllWithLecturers()
-            Napier.d("Retrieved ${storedLectures.size} stored lectures from database", tag = TAG)
+            Napier.d("✅ Retrieved ${storedLectures.size} stored lectures from database", tag = TAG)
+            storedLectures.forEachIndexed { index, lectureWithLecturers ->
+                Napier.d("   ${index + 1}. ${lectureWithLecturers.lecture.shortSubjectName} at ${lectureWithLecturers.lecture.startTime}", tag = TAG)
+            }
 
             // Step 3: Detect changes
+            Napier.d("🔍 Step 3: Detecting changes...", tag = TAG)
             val changes = mutableListOf<LectureChange>()
 
             // Create lookup maps for efficient comparison
             val currentLectureMap = currentLectures.associateBy { it.lectureId }
             val storedLectureMap = storedLectures.associateBy { it.lecture.lectureId }
 
+            Napier.d("📊 Comparison maps created:", tag = TAG)
+            Napier.d("   Current lectures: ${currentLectureMap.size} entries", tag = TAG)
+            Napier.d("   Stored lectures: ${storedLectureMap.size} entries", tag = TAG)
+
             // Check for modifications and deletions (cancellations)
+            Napier.d("🔄 Checking for modifications and cancellations...", tag = TAG)
             for (stored in storedLectures) {
                 val current = currentLectureMap[stored.lecture.lectureId]
 
                 if (current == null) {
                     // Potential cancellation - needs confirmation
-                    Napier.d("Potential cancellation detected for lecture ${stored.lecture.lectureId}", tag = TAG)
+                    Napier.w("⚠️  Potential cancellation detected for lecture ${stored.lecture.lectureId}: ${stored.lecture.shortSubjectName}", tag = TAG)
                     val confirmedCancellation = confirmCancellation(stored.lecture.lectureId)
                     if (confirmedCancellation) {
+                        Napier.e("❌ CONFIRMED: Lecture cancelled - ${stored.lecture.shortSubjectName}", tag = TAG)
                         changes.add(
                             LectureChange.Cancellation(
                                 lectureId = stored.lecture.lectureId,
@@ -82,18 +97,30 @@ class LectureChangeMonitor(
                                 confirmedAfterDelay = true
                             )
                         )
+                    } else {
+                        Napier.d("✅ False alarm: Lecture still exists after recheck", tag = TAG)
                     }
                 } else {
                     // Compare existing lecture for changes
+                    Napier.d("🔎 Comparing lecture ${stored.lecture.lectureId}: ${stored.lecture.shortSubjectName}", tag = TAG)
                     val lectureChanges = detectLectureChanges(stored, current)
+                    if (lectureChanges.isNotEmpty()) {
+                        Napier.d("   📝 Found ${lectureChanges.size} change(s) in this lecture", tag = TAG)
+                        lectureChanges.forEach { change ->
+                            Napier.d("      - ${change::class.simpleName}", tag = TAG)
+                        }
+                    } else {
+                        Napier.d("   ✅ No changes detected", tag = TAG)
+                    }
                     changes.addAll(lectureChanges)
                 }
             }
 
             // Check for new lectures
+            Napier.d("➕ Checking for new lectures...", tag = TAG)
             for (current in currentLectures) {
                 if (!storedLectureMap.containsKey(current.lectureId)) {
-                    Napier.d("New lecture detected: ${current.lectureId}", tag = TAG)
+                    Napier.d("🆕 New lecture detected: ${current.lectureId} - ${current.shortSubjectName}", tag = TAG)
                     changes.add(
                         LectureChange.NewLecture(
                             lectureId = current.lectureId,
@@ -104,7 +131,13 @@ class LectureChangeMonitor(
                 }
             }
 
-            Napier.d("Change detection complete: ${changes.size} changes found", tag = TAG)
+            Napier.d("📊 Change detection complete: ${changes.size} total change(s) found", tag = TAG)
+            if (changes.isNotEmpty()) {
+                Napier.d("📋 Summary of changes:", tag = TAG)
+                changes.groupBy { it::class.simpleName }.forEach { (type, list) ->
+                    Napier.d("   - $type: ${list.size}", tag = TAG)
+                }
+            }
 
             return if (changes.isEmpty()) {
                 MonitorResult.NoChanges(currentLectures.size)
@@ -130,7 +163,7 @@ class LectureChangeMonitor(
 
         // Check time changes
         if (storedLecture.startTime != current.startTime || storedLecture.endTime != current.endTime) {
-            Napier.d("Time change detected for lecture ${storedLecture.lectureId}", tag = TAG)
+            Napier.d("      ⏰ Time change: ${storedLecture.startTime} -> ${current.startTime}", tag = TAG)
             changes.add(
                 LectureChange.TimeChange(
                     lectureId = storedLecture.lectureId,
@@ -145,7 +178,7 @@ class LectureChangeMonitor(
 
         // Check location changes
         if (storedLecture.location != current.location) {
-            Napier.d("Location change detected for lecture ${storedLecture.lectureId}", tag = TAG)
+            Napier.d("      📍 Location change: '${storedLecture.location}' -> '${current.location}'", tag = TAG)
             changes.add(
                 LectureChange.LocationChange(
                     lectureId = storedLecture.lectureId,
@@ -158,7 +191,7 @@ class LectureChangeMonitor(
 
         // Check type changes (lecture <-> test)
         if (storedLecture.isTest != current.isTest) {
-            Napier.d("Type change detected for lecture ${storedLecture.lectureId}", tag = TAG)
+            Napier.d("      📝 Type change: ${if (storedLecture.isTest) "Test" else "Lecture"} -> ${if (current.isTest) "Test" else "Lecture"}", tag = TAG)
             changes.add(
                 LectureChange.TypeChange(
                     lectureId = storedLecture.lectureId,
@@ -175,7 +208,9 @@ class LectureChangeMonitor(
         val newLecturerNames = currentLecturers.map { it.lecturerName }
 
         if (oldLecturerNames.sorted() != newLecturerNames.sorted()) {
-            Napier.d("Lecturer change detected for lecture ${storedLecture.lectureId}", tag = TAG)
+            Napier.d("      👨‍🏫 Lecturer change:", tag = TAG)
+            Napier.d("         Old: ${oldLecturerNames.joinToString(", ")}", tag = TAG)
+            Napier.d("         New: ${newLecturerNames.joinToString(", ")}", tag = TAG)
             changes.add(
                 LectureChange.LecturerChange(
                     lectureId = storedLecture.lectureId,
@@ -194,12 +229,13 @@ class LectureChangeMonitor(
      * Returns true if the lecture is still missing after the delay.
      */
     private suspend fun confirmCancellation(lectureId: Long): Boolean {
-        Napier.d("Confirming cancellation for lecture $lectureId after ${CANCELLATION_RECHECK_DELAY_MS}ms", tag = TAG)
+        Napier.d("⏳ Confirming cancellation for lecture $lectureId (waiting ${CANCELLATION_RECHECK_DELAY_MS}ms)...", tag = TAG)
         delay(CANCELLATION_RECHECK_DELAY_MS)
 
+        Napier.d("🔄 Re-fetching lectures to confirm cancellation...", tag = TAG)
         val recheckResult = dualisLectureService.getWeeklyLecturesForCurrentWeek()
         if (recheckResult.isFailure) {
-            Napier.w("Failed to recheck for cancellation confirmation", tag = TAG)
+            Napier.w("⚠️  Failed to recheck for cancellation confirmation - treating as NOT cancelled for safety", tag = TAG)
             // If recheck fails, we can't confirm - return false to be safe
             return false
         }
@@ -207,7 +243,12 @@ class LectureChangeMonitor(
         val recheckLectures = recheckResult.getOrNull() ?: emptyList()
         val stillMissing = recheckLectures.none { it.lectureId == lectureId }
 
-        Napier.d("Cancellation ${if (stillMissing) "confirmed" else "not confirmed"} for lecture $lectureId", tag = TAG)
+        if (stillMissing) {
+            Napier.e("✅ Cancellation CONFIRMED: Lecture $lectureId still missing after recheck", tag = TAG)
+        } else {
+            Napier.d("❌ Cancellation NOT confirmed: Lecture $lectureId found in recheck", tag = TAG)
+        }
+
         return stillMissing
     }
 
