@@ -44,7 +44,6 @@ kotlin {
             implementation(libs.androidx.security.crypto)
             implementation(libs.androidx.work.runtime.ktx)
             implementation(libs.ktor.client.okhttp)
-            implementation(libs.dnsjava)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -106,8 +105,8 @@ android {
         applicationId = "de.joinside.dhbw"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 16
-        versionName = "v1.0.13"
+        versionCode = 15
+        versionName = "v1.0.12"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -176,7 +175,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "dhbw-next"
-            packageVersion = "1.0.13"
+            packageVersion = "1.0.12"
             modules(
                 "java.base",
                 "java.datatransfer",
@@ -225,7 +224,7 @@ room {
 // Custom fat JAR task - simple and reliable
 val packageFatJar by tasks.registering(Jar::class) {
     archiveBaseName.set("dhbw-next")
-    archiveVersion.set("1.0.13")
+    archiveVersion.set("1.0.12")
     archiveClassifier.set("all")
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE

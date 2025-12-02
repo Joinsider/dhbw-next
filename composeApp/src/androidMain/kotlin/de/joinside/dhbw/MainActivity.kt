@@ -31,13 +31,10 @@ import de.joinside.dhbw.data.storage.preferences.NotificationPreferencesInteract
 import de.joinside.dhbw.ui.schedule.viewModels.TimetableViewModel
 import io.github.aakira.napier.Napier
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.cookies.HttpCookies
-import io.ktor.client.plugins.HttpTimeout
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.combine
-
 
 class MainActivity : ComponentActivity() {
 
@@ -93,24 +90,12 @@ class MainActivity : ComponentActivity() {
         )
         Napier.d("Database initialized", tag = "MainActivity")
 
-        // Create shared HttpClient for cookie sharing with custom DNS resolver
-        val sharedHttpClient = HttpClient(OkHttp) {
+        // Create shared HttpClient for cookie sharing
+        val sharedHttpClient = HttpClient {
             expectSuccess = false
             install(HttpCookies)
-            install(HttpTimeout) {
-                socketTimeoutMillis = 30000
-                connectTimeoutMillis = 30000
-                requestTimeoutMillis = 30000
-            }
-
-            // Configure OkHttp engine with custom DNS resolver
-            engine {
-                config {
-                    dns(de.joinside.dhbw.data.network.CustomDnsResolver())
-                }
-            }
         }
-        Napier.d("Shared HttpClient created with custom DNS resolver", tag = "MainActivity")
+        Napier.d("Shared HttpClient created", tag = "MainActivity")
 
         // Create session manager
         val secureStorage = SecureStorage()

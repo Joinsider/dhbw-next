@@ -154,12 +154,7 @@ class DualisLectureService(
 
             // Step 1: Fetch HTML via API client
             Napier.d("Fetching weekly timetable HTML", tag = TAG)
-            
-            // Clean cookie
-            val rawCookie = authData.cookie
-            val cookie = rawCookie?.substringBefore(";")
-            
-            when (val apiResult = apiClient.get(BASE_URL, urlParameters, cookie)) {
+            when (val apiResult = apiClient.get(BASE_URL, urlParameters)) {
                 is DualisApiClient.ApiResult.Success -> {
                     val htmlContent = apiResult.htmlContent
 
@@ -439,13 +434,8 @@ class DualisLectureService(
 
             Napier.d("Parsed URL - base: $baseUrl, params: $urlParameters", tag = TAG)
 
-            // Get cookie for request
-            val authData = sessionManager.getAuthData()
-            val rawCookie = authData?.cookie
-            val cookie = rawCookie?.substringBefore(";")
-
             // Fetch via API client
-            when (val apiResult = apiClient.get(baseUrl, urlParameters, cookie)) {
+            when (val apiResult = apiClient.get(baseUrl, urlParameters)) {
                 is DualisApiClient.ApiResult.Success -> {
                     val htmlContent = apiResult.htmlContent
                     Napier.d("Received HTML content (${htmlContent.length} chars)", tag = TAG)
@@ -585,94 +575,5 @@ class DualisLectureService(
 
         // Use the start date to fetch the week
         return getWeeklyLecturesForDate(start.date)
-    }
-
-    /**
-     * Fetch only the weekly skeleton (overview) without hitting individual lecture pages.
-     * Returns basic LectureEventEntity list (no lecturers, rooms from weekly grid, maybe short/full as available).
-     * Nothing is saved to the database here.
-     */
-    suspend fun getWeeklySkeletonForWeek(start: LocalDateTime, end: LocalDateTime): Result<List<LectureEventEntity>> {
-        return getWeeklySkeletonForDate(start.date)
-    }
-
-    private suspend fun getWeeklySkeletonForDate(date: LocalDate): Result<List<LectureEventEntity>> {
-        Napier.d("Fetching weekly skeleton for date: $date", tag = TAG)
-
-        // Check authentication
-        if (!sessionManager.isAuthenticated() && !sessionManager.isDemoMode()) {
-            Napier.w("No active session, need to authenticate first", tag = TAG)
-            val reAuthResult = reAuthenticate()
-            if (reAuthResult.isFailure) {
-                return Result.failure(reAuthResult.exceptionOrNull()!!)
-            }
-        }
-
-        // Handle demo mode similar to full flow: just return demo lectures as already basic
-        if (sessionManager.isDemoMode()) {
-            Napier.d("Demo mode active, returning demo lectures as skeleton", tag = TAG)
-            val demoStartDate = LocalDateTime(date.year, date.month, date.day, 0, 0, 0)
-            val demoLectures = DemoDataProvider.generateDemoLecturesForWeek(demoStartDate)
-            return Result.success(demoLectures)
-        }
-
-        try {
-            val authData = sessionManager.getAuthData() ?: return Result.failure(Exception("No auth data available"))
-            val dateString = "${date.day.toString().padStart(2, '0')}.${date.month.number.toString().padStart(2, '0')}.${date.year}"
-            val urlParameters = mapOf(
-                "APPNAME" to "CampusNet",
-                "PRGNAME" to "SCHEDULER",
-                "ARGUMENTS" to "-N${authData.sessionId},-N000028,-A$dateString,-A,-N1,-N000000000000000"
-            )
-
-            // Clean cookie
-            val rawCookie = authData.cookie
-            val cookie = rawCookie?.substringBefore(";")
-
-            when (val apiResult = apiClient.get(BASE_URL, urlParameters, cookie)) {
-                is DualisApiClient.ApiResult.Success -> {
-                    val htmlContent = apiResult.htmlContent
-
-                    if (htmlParser.isErrorPage(htmlContent) || !htmlParser.isValidTimetablePage(htmlContent)) {
-                        Napier.w("Invalid/expired timetable page when fetching skeleton, try re-auth", tag = TAG)
-                        val reAuthResult = reAuthenticate()
-                        if (reAuthResult.isFailure) {
-                            return Result.failure(reAuthResult.exceptionOrNull()!!)
-                        }
-                        // Retry once after re-auth
-                        return getWeeklySkeletonForDate(date)
-                    }
-
-                    // Parse only weekly view
-                    val tempLectures = timetableParser.parseWeeklyView(htmlContent)
-                    val basicEntities = tempLecturesToBasicEntities(tempLectures)
-                    Napier.d("Skeleton contains ${basicEntities.size} items", tag = TAG)
-                    return Result.success(basicEntities)
-                }
-                is DualisApiClient.ApiResult.Failure -> {
-                    return Result.failure(Exception(apiResult.message))
-                }
-            }
-        } catch (e: Exception) {
-            Napier.e("Error fetching weekly skeleton: ${e.message}", e, tag = TAG)
-            return Result.failure(e)
-        }
-    }
-
-    @OptIn(ExperimentalTime::class)
-    private fun tempLecturesToBasicEntities(tempLectures: List<TempLectureModel>): List<LectureEventEntity> {
-        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-        return tempLectures.map { temp ->
-            LectureEventEntity(
-                lectureId = 0,
-                shortSubjectName = temp.shortSubjectName ?: "Unknown",
-                fullSubjectName = temp.fullSubjectName,
-                startTime = temp.startTime,
-                endTime = temp.endTime,
-                location = temp.location,
-                isTest = temp.isTest,
-                fetchedAt = now
-            )
-        }
     }
 }

@@ -63,7 +63,6 @@
     <string name="location">Standort</string>
     <string name="no_lectures_this_week">In dieser Woche sind keine Vorlesungen geplant.</string>
     <string name="loading_lectures">Stundenplan wird geladen... Das kann ein paar Sekunden dauern. (Dualis ist Schuld!)</string>
-    <string name="loading_week_from_dualis">Woche wird aus Dualis geladen…</string>
     <string name="lecture_details">Vorlesungsdetails</string>
     <string name="subject">Fach</string>
     <string name="date">Datum</string>
@@ -130,16 +129,5 @@
     <string name="settings_title">Einstellungen</string>
     <string name="coming_soon">Demnächst verfügbar...</string>
     <string name="logout">Abmelden</string>
-
-    <!-- Grades Page -->
-    <string name="grades">Noten</string>
-    <string name="semester_gpa">Semester Schnitt</string>
-    <string name="status_unknown">Status unbekannt</string>
-    <string name="combined_page">Alle</string>
-    <string name="all_semesters">Alle</string>
-    <string name="overall_statistics">Gesamtstatistik</string>
-    <string name="overall_gpa">Gesamt-Notenschnitt</string>
-    <string name="credits_earned">Credits erworben</string>
-    <string name="modules_completed">Module abgeschlossen</string>
-    <string name="login_required_for_grades">Bitte melde dich an, um deine Noten zu sehen.</string>
 </resources>
+

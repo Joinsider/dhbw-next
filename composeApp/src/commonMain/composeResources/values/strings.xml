@@ -72,7 +72,6 @@
     <string name="end_time">End Time</string>
     <string name="test_exam">Test/Exam</string>
     <string name="close">Close</string>
-    <string name="loading_week_from_dualis">Loading week from Dualis…</string>
 
     <!-- Weekdays -->
     <string name="monday">Monday</string>
@@ -133,16 +132,4 @@
     <string name="settings_title">Settings</string>
     <string name="coming_soon">Coming soon...</string>
     <string name="logout">Logout</string>
-
-    <!-- Grades Page -->
-    <string name="grades">Grades</string>
-    <string name="semester_gpa">Semester GPA</string>
-    <string name="status_unknown">status unknown</string>
-    <string name="combined_page">Combined</string>
-    <string name="all_semesters">All</string>
-    <string name="overall_statistics">Overall Statistics</string>
-    <string name="overall_gpa">Overall GPA</string>
-    <string name="credits_earned">Credits Earned</string>
-    <string name="modules_completed">Modules Completed</string>
-    <string name="login_required_for_grades">Please log in to view your grades.</string>
 </resources>
