@@ -7,10 +7,10 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
 import androidx.room.TypeConverters
-import de.joinside.dhbw.data.storage.database.dao.grades.GradesDao
-import de.joinside.dhbw.data.storage.database.dao.grades.SemesterDao
-import de.joinside.dhbw.data.storage.database.entities.grades.GradesEntity
-import de.joinside.dhbw.data.storage.database.entities.grades.SemesterEntity
+import de.joinside.dhbw.data.storage.database.dao.grades.GradeDao
+import de.joinside.dhbw.data.storage.database.dao.grades.GradeCacheMetadataDao
+import de.joinside.dhbw.data.storage.database.entities.grades.GradeEntity
+import de.joinside.dhbw.data.storage.database.entities.grades.GradeCacheMetadata
 import de.joinside.dhbw.data.storage.database.converters.DateTimeConverter
 import de.joinside.dhbw.data.storage.database.dao.SyncMetadataDao
 import de.joinside.dhbw.data.storage.database.dao.timetable.LectureLecturerCrossRefDao
@@ -23,21 +23,21 @@ import de.joinside.dhbw.data.storage.database.entities.timetable.LecturerEntity
 
 @Database(
     entities = [
-        SemesterEntity::class,
-        GradesEntity::class,
+        GradeEntity::class,
+        GradeCacheMetadata::class,
         LectureEventEntity::class,
         LecturerEntity::class,
         LectureLecturerCrossRef::class,
         SyncMetadataEntity::class
     ],
-    version = 2,
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(DateTimeConverter::class)
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {
-    abstract fun semesterDao(): SemesterDao
-    abstract fun gradesDao(): GradesDao
+    abstract fun gradeDao(): GradeDao
+    abstract fun gradeCacheMetadataDao(): GradeCacheMetadataDao
 
     abstract fun lectureDao(): LectureEventDao
     abstract fun lecturerDao(): LecturerDao
@@ -53,8 +53,8 @@ abstract class AppDatabase : RoomDatabase() {
         lectureLecturerCrossRefDao().deleteAll()
         lectureDao().deleteAll()
         lecturerDao().deleteAll()
-        gradesDao().deleteAll()
-        semesterDao().deleteAll()
+        gradeDao().deleteAll()
+        gradeCacheMetadataDao().deleteAll()
         syncMetadataDao().clearAllSyncMetadata()
     }
 }
