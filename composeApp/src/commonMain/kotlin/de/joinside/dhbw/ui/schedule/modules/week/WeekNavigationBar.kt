@@ -5,18 +5,16 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -28,7 +26,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
@@ -76,47 +73,30 @@ fun WeekNavigationBar(
         )
         // spacer with weight to push the text to center between icons
         Spacer(Modifier.weight(1f))
-        Box(
+        Button(
+            onClick = {
+                onWeekLabelClick()
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.Confirm)
+            },
             modifier = Modifier
                 .padding(horizontal = 8.dp)
-                .background(
-                    color = if (isRefreshing) {
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
-                    } else {
-                        MaterialTheme.colorScheme.surface
-                    },
-                    shape = MaterialTheme.shapes.small
+                .testTag("weekLabelButton"),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface
+            ),
+            shape = MaterialTheme.shapes.small,
+            enabled = !isRefreshing,
+            elevation = ButtonDefaults.buttonElevation(
+            ),
+            content = {
+                Text(
+                    text = weekLabel,
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
-                .testTag("weekLabelButton")
-                .pointerInput(isRefreshing) {
-                    detectTapGestures(
-                        onTap = {
-                            if (!isRefreshing) {
-                                onWeekLabelClick()
-                                hapticFeedback.performHapticFeedback(HapticFeedbackType.Confirm)
-                            }
-                        },
-                        onLongPress = {
-                            if (!isRefreshing && onRefresh != null) {
-                                onRefresh()
-                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                            }
-                        }
-                    )
-                }
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = weekLabel,
-                style = MaterialTheme.typography.headlineSmall,
-                color = if (isRefreshing) {
-                    MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.5f)
-                } else {
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                }
-            )
-        }
+            }
+        )
 
         Spacer(Modifier.weight(1f))
         IconButton(

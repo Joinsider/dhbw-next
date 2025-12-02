@@ -19,9 +19,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,21 +27,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import de.joinside.dhbw.resources.Res
 import de.joinside.dhbw.resources.no_lectures_this_week
 import de.joinside.dhbw.ui.schedule.models.LectureModel
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextAlign
+import de.joinside.dhbw.util.isMobilePlatform
+import kotlinx.coroutines.launch
+import kotlinx.datetime.DayOfWeek
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import de.joinside.dhbw.ui.schedule.modules.week.DayColumn
@@ -95,46 +92,45 @@ fun WeeklyLecturesView(
         ) {
             val availableHeightDp = maxHeight
 
-            // Always show the grid structure; if no lectures yet, still render timeline and days
-            val startHour = lectures.minOfOrNull { it.start.hour }?.coerceAtMost(8) ?: 8
-            val endHour = lectures.maxOfOrNull { it.end.hour }?.coerceAtLeast(19) ?: 19
-
-            val totalHours = endHour - startHour
-            val hoursForCalculation = totalHours + 2
-            val minHourHeightDp = 40.dp
-            val minContentHeightDp = minHourHeightDp * hoursForCalculation
-
-            val (hourHeight, scrollEnabled) = if (availableHeightDp >= minContentHeightDp) {
-                val calculatedHeight = availableHeightDp / hoursForCalculation
-                Pair(calculatedHeight.value, false)
+            if (lectures.isEmpty()) {
+                Text(
+                    text = stringResource(Res.string.no_lectures_this_week),
+                    modifier = Modifier.padding(16.dp).testTag("noLecturesMessage"),
+                    textAlign = TextAlign.Center
+                )
             } else {
-                Pair(minHourHeightDp.value, true)
-            }
-
-            val scrollState = rememberScrollState()
-
-            val nestedScrollConnection = remember {
-                object : NestedScrollConnection {
-                    override fun onPreScroll(
-                        available: Offset,
-                        source: NestedScrollSource
-                    ): Offset {
-                        if (scrollState.value == 0 && available.y > 0) {
-                            return Offset.Zero
-                        }
-                        return Offset.Zero
+                val lecturesByDay =
+                    lectures.groupBy { it.start.dayOfWeek }.mapValues { (_, dayLectures) ->
+                        dayLectures.sortedBy { it.start }
                     }
 
-                    override suspend fun onPreFling(available: Velocity): Velocity {
-                        if (scrollState.value == 0 && available.y > 0) {
-                            return Velocity.Zero
-                        }
-                        return Velocity.Zero
-                    }
+                val startHour = lectures.minOfOrNull { it.start.hour }?.coerceAtMost(8) ?: 8
+                val endHour = lectures.maxOfOrNull { it.end.hour }?.coerceAtLeast(19) ?: 19
+
+                val totalHours = endHour - startHour
+                // THE FIX: We calculate space for one extra hour to ensure the last label is visible
+                val hoursForCalculation = totalHours + 2
+
+                val minHourHeightDp = 40.dp
+                val minContentHeightDp = minHourHeightDp * hoursForCalculation
+
+                val (hourHeight, scrollEnabled) = if (availableHeightDp >= minContentHeightDp) {
+                    // Enough space: distribute available height by (totalHours + 1)
+                    // This ensures the actual content (totalHours) leaves exactly 1 hour of empty space at bottom
+                    val calculatedHeight = availableHeightDp / hoursForCalculation
+                    Pair(calculatedHeight.value, false)
+                } else {
+                    // Not enough space: Use minimum height
+                    Pair(minHourHeightDp.value, true)
                 }
-            }
 
-            val containerHeight = if (scrollEnabled) minContentHeightDp else availableHeightDp
+                val scrollState = rememberScrollState()
+                val coroutineScope = rememberCoroutineScope()
+
+                // Calculate the height needed for the container
+                // If scrolling, we need the full calculated height
+                // If not scrolling, we just take the full available height
+                val containerHeight = if(scrollEnabled) minContentHeightDp else availableHeightDp
 
             Box(
                 modifier = Modifier
@@ -192,9 +188,25 @@ fun WeeklyLecturesView(
                         .fillMaxWidth()
                         .height(containerHeight)
                         .then(
-                            Modifier
-                                .nestedScroll(nestedScrollConnection)
-                                .verticalScroll(scrollState)
+                            if (scrollEnabled) {
+                                Modifier.verticalScroll(scrollState)
+                            } else {
+                                Modifier
+                            }
+                        )
+                        .then(
+                            if (!isMobilePlatform() && scrollEnabled) {
+                                Modifier.pointerInput(Unit) {
+                                    detectDragGestures { change, dragAmount ->
+                                        change.consume()
+                                        coroutineScope.launch {
+                                            scrollState.scrollBy(-dragAmount.y)
+                                        }
+                                    }
+                                }
+                            } else {
+                                Modifier
+                            }
                         )
                 ) {
                     TimelineView(
@@ -202,8 +214,7 @@ fun WeeklyLecturesView(
                     )
 
                     Row(
-                        modifier = Modifier
-                            .weight(1f)
+                        modifier = Modifier.weight(1f)
                             .onGloballyPositioned { coordinates ->
                                 rowWidth = with(density) { coordinates.size.width.toDp() }
                             }
@@ -216,7 +227,7 @@ fun WeeklyLecturesView(
                             ).forEach { day ->
                                 DayColumn(
                                     dayOfWeek = day,
-                                    lectures = lectures.filter { it.start.dayOfWeek == day }.sortedBy { it.start },
+                                    lectures = lecturesByDay[day] ?: emptyList(),
                                     startHour = startHour,
                                     endHour = endHour,
                                     hourHeight = hourHeight,
@@ -226,34 +237,6 @@ fun WeeklyLecturesView(
                                     onLectureClick = onLectureClick
                                 )
                             }
-                        }
-                    }
-                }
-
-                // Overlay center text message when reloading or empty list
-                if (isRefreshing || lectures.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        val text = if (isRefreshing) stringResource(Res.string.loading_week_from_dualis) else stringResource(Res.string.no_lectures_this_week)
-                        // Background chip around the text for readability
-                        Box(
-                            modifier = Modifier
-                                .background(
-                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
-                                    shape = RoundedCornerShape(12.dp)
-                                )
-                                .padding(horizontal = 16.dp, vertical = 10.dp)
-                                .then(if (!isRefreshing) Modifier.testTag("noLecturesMessage") else Modifier)
-                        ) {
-                            Text(
-                                text = text,
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
                         }
                     }
                 }
