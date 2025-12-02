@@ -16,6 +16,7 @@ import de.joinside.dhbw.data.dualis.remote.parser.TimetableParser
 import de.joinside.dhbw.data.dualis.remote.services.AuthenticationService
 import de.joinside.dhbw.data.dualis.remote.services.DualisLectureService
 import de.joinside.dhbw.data.dualis.remote.session.SessionManager
+import de.joinside.dhbw.data.network.CustomDnsResolver
 import de.joinside.dhbw.data.storage.credentials.SecureStorage
 import de.joinside.dhbw.data.storage.credentials.SecureStorageWrapper
 import de.joinside.dhbw.data.storage.database.createRoomDatabase
@@ -31,10 +32,13 @@ import de.joinside.dhbw.data.storage.preferences.NotificationPreferencesInteract
 import de.joinside.dhbw.ui.schedule.viewModels.TimetableViewModel
 import io.github.aakira.napier.Napier
 import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.cookies.HttpCookies
+import io.ktor.client.plugins.HttpTimeout
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.combine
+
 
 class MainActivity : ComponentActivity() {
 
@@ -90,12 +94,24 @@ class MainActivity : ComponentActivity() {
         )
         Napier.d("Database initialized", tag = "MainActivity")
 
-        // Create shared HttpClient for cookie sharing
-        val sharedHttpClient = HttpClient {
+        // Create shared HttpClient for cookie sharing with custom DNS resolver
+        val sharedHttpClient = HttpClient(OkHttp) {
             expectSuccess = false
             install(HttpCookies)
+            install(HttpTimeout) {
+                socketTimeoutMillis = 30000
+                connectTimeoutMillis = 30000
+                requestTimeoutMillis = 30000
+            }
+
+            // Configure OkHttp engine with custom DNS resolver
+            engine {
+                config {
+                    dns(CustomDnsResolver())
+                }
+            }
         }
-        Napier.d("Shared HttpClient created", tag = "MainActivity")
+        Napier.d("Shared HttpClient created with custom DNS resolver", tag = "MainActivity")
 
         // Create session manager
         val secureStorage = SecureStorage()
