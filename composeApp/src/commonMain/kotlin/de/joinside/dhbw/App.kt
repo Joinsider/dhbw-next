@@ -15,10 +15,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import de.joinside.dhbw.data.dualis.remote.DualisApiClient
-import de.joinside.dhbw.data.dualis.remote.parser.GradeParser
-import de.joinside.dhbw.data.dualis.remote.parser.HtmlParser
-import de.joinside.dhbw.data.dualis.remote.services.DualisGradeService
 import de.joinside.dhbw.data.dualis.remote.services.AuthenticationService
 import de.joinside.dhbw.data.dualis.remote.session.SessionManager
 import de.joinside.dhbw.data.storage.credentials.CredentialsStorageProvider
@@ -35,13 +31,11 @@ import de.joinside.dhbw.ui.pages.SettingsPage
 import de.joinside.dhbw.ui.pages.Startpage
 import de.joinside.dhbw.ui.pages.TimetablePage
 import de.joinside.dhbw.ui.schedule.viewModels.TimetableViewModel
-import de.joinside.dhbw.ui.grades.viewModels.GradesViewModel
 import de.joinside.dhbw.ui.theme.DHBWHorbTheme
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.cookies.HttpCookies
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -109,11 +103,6 @@ fun App(
         HttpClient {
             expectSuccess = false
             install(HttpCookies)
-            install(HttpTimeout) {
-                socketTimeoutMillis = 30000
-                connectTimeoutMillis = 30000
-                requestTimeoutMillis = 30000
-            }
         }
     }
 
@@ -123,28 +112,6 @@ fun App(
             sessionManager = sessionManager,
             client = sharedHttpClient
         )
-    }
-
-    // Initialize GradesViewModel locally for now (TODO: Move to platform entry points like TimetableViewModel)
-    // We need to reuse the same HttpClient (via authenticationService) or pass it to apiClient
-    val gradesViewModel = remember(database, authenticationService, sharedHttpClient) {
-        if (database != null) {
-            val apiClient = DualisApiClient(sharedHttpClient)
-            val gradeParser = GradeParser()
-            val htmlParser = HtmlParser()
-            val gradeService = DualisGradeService(
-                apiClient = apiClient,
-                sessionManager = sessionManager,
-                authenticationService = authenticationService,
-                gradeParser = gradeParser,
-                htmlParser = htmlParser,
-                gradeDao = database.gradeDao(),
-                gradeCacheMetadataDao = database.gradeCacheMetadataDao()
-            )
-            GradesViewModel(gradeService, database.gradeDao())
-        } else {
-            null
-        }
     }
 
     // Keep CredentialsProvider for backward compatibility with existing UI
@@ -265,7 +232,6 @@ fun App(
 
                 AppScreen.GRADES -> {
                     GradesPage(
-                        viewModel = gradesViewModel,
                         onNavigateToTimetable = {
                             currentScreen = AppScreen.TIMETABLE
                         },

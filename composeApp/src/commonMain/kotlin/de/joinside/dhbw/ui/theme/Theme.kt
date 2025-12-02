@@ -104,8 +104,7 @@ fun DHBWHorbTheme(
 
     MaterialExpressiveTheme (
         colorScheme = colorScheme,
-        typography = myTypography(),
-        motionScheme = motionScheme,
+        typography = Typography,
         shapes = shapes,
         content = content
     )
