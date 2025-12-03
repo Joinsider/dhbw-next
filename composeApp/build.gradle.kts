@@ -102,15 +102,15 @@ kotlin {
 }
 
 android {
-    namespace = "de.joinside.dhbw"
+    namespace = "de.fampopprol.dhbwhorb"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "de.joinside.dhbw"
+        applicationId = "de.fampopprol.dhbwhorb"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 16
-        versionName = "v1.0.13"
+        versionCode = 17
+        versionName = "v1.1.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -179,7 +179,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "dhbw-next"
-            packageVersion = "1.0.13"
+            packageVersion = "1.1.6"
             modules(
                 "java.base",
                 "java.datatransfer",
@@ -199,7 +199,7 @@ compose.desktop {
             }
             macOS {
                 iconFile.set(project.file("icon.icns"))
-                bundleID = "de.joinside.dhbw"
+                bundleID = "de.fampopprol.dhbwhorb"
                 // For Mac App Store, you'll need to configure signing:
                 // signing {
                 //     sign.set(true)
@@ -216,7 +216,7 @@ compose.desktop {
 
 
 compose.resources {
-    packageOfResClass = "de.joinside.dhbw.resources"
+    packageOfResClass = "de.fampopprol.dhbwhorb.resources"
     publicResClass = true
     generateResClass = always
 }
@@ -228,7 +228,7 @@ room {
 // Custom fat JAR task - simple and reliable
 val packageFatJar by tasks.registering(Jar::class) {
     archiveBaseName.set("dhbw-next")
-    archiveVersion.set("1.0.13")
+    archiveVersion.set("1.1.6")
     archiveClassifier.set("all")
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
