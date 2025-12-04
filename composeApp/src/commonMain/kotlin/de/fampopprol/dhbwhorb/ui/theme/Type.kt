@@ -28,8 +28,9 @@ fun myTypography(): Typography {
         Font(
             Res.font.roboto_flex,
             variationSettings = FontVariation.Settings(
-                FontVariation.weight(700),
+                FontVariation.weight(600),
                 FontVariation.grade(-100),
+                FontVariation.Setting("opsz", 90f ),
                 //FontVariation.Setting("xtra", 603f),
                 //FontVariation.Setting("YTLC", 416f),
                 //FontVariation.Setting("YTUC", 528f),
@@ -49,6 +50,7 @@ fun myTypography(): Typography {
                 FontVariation.Setting("YTLC", 440f),
                 FontVariation.Setting("YTUC", 580f),
                 FontVariation.Setting("YTAS", 700f),
+                FontVariation.Setting("YTFI", 560f)
             )
         )
     )
@@ -151,10 +153,10 @@ fun myTypography(): Typography {
             letterSpacing = 0.1.sp
         ),
         labelMedium = TextStyle(
-            fontFamily = customFont,
+            fontFamily = customFontConsensed,
             fontWeight = FontWeight.Medium,
-            fontSize = 12.sp,
-            lineHeight = 16.sp,
+            fontSize = 14.sp,
+            lineHeight = 18.sp,
             letterSpacing = 0.5.sp
         ),
         labelSmall = TextStyle(
@@ -163,6 +165,27 @@ fun myTypography(): Typography {
             fontSize = 12.sp,
             lineHeight = 16.sp,
             letterSpacing = 0.5.sp
+        ),
+        labelSmallEmphasized = TextStyle(
+            fontFamily = customFontConsensed,
+            fontWeight = FontWeight.Bold,
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+            letterSpacing = 0.5.sp
+        ),
+        headlineMediumEmphasized = TextStyle(
+            fontFamily = customFontExpanded,
+            fontWeight = FontWeight.Bold,
+            fontSize = 24.sp,
+            lineHeight = 36.sp,
+            letterSpacing = 0.sp
+        ),
+        headlineSmallEmphasized = TextStyle(
+            fontFamily = customFontExpanded,
+            fontWeight = FontWeight.Normal,
+            fontSize = 24.sp,
+            lineHeight = 32.sp,
+            letterSpacing = 0.sp
         ),
         // Expressive styles
         headlineLargeEmphasized = TextStyle(

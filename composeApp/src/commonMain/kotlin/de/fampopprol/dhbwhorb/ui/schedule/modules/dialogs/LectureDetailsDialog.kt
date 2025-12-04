@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -56,6 +57,7 @@ val TimeFormatter = LocalTime.Format {
  * Dialog displaying detailed information about a lecture event.
  * Shows full name, date, time, location, and lecturer information.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun LectureDetailsDialog(
     lecture: LectureModel,
@@ -68,7 +70,7 @@ fun LectureDetailsDialog(
         title = {
             Text(
                 text = stringResource(Res.string.lecture_details),
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.headlineSmallEmphasized,
                 fontWeight = FontWeight.Bold
             )
         },

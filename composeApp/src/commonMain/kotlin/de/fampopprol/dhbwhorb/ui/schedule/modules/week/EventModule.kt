@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +37,7 @@ fun formatEventTime(dateTime: LocalDateTime): String {
     return dateTime.time.format(EventTimeFormatter) // Extract LocalTime part and format
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 @Preview
 fun EventModule(
@@ -67,8 +69,7 @@ fun EventModule(
 
         Text(
             text = if(smallFont) lecture.shortName else lecture.name,
-            style = if(smallFont) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Bold,
+            style = if(smallFont) MaterialTheme.typography.labelSmallEmphasized else MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onPrimary,
             overflow = TextOverflow.MiddleEllipsis
         )

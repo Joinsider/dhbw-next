@@ -15,6 +15,7 @@ import kotlin.coroutines.suspendCoroutine
 /**
  * iOS implementation of NotificationDispatcher using UNUserNotificationCenter.
  */
+@Suppress("EXPECT_ACTUAL_CLASSIFIERS_ARE_IN_BETA_WARNING")
 @OptIn(ExperimentalForeignApi::class)
 actual class NotificationDispatcher {
 
@@ -105,7 +106,7 @@ actual class NotificationDispatcher {
             setTitle(title)
             setBody(message)
             setSound(UNNotificationSound.defaultSound())
-            setBadge(changeCount)
+            setBadge(platform.Foundation.NSNumber(changeCount))
             setCategoryIdentifier(CATEGORY_LECTURE_CHANGE)
         }
 
